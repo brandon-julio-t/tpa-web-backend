@@ -58,7 +58,6 @@ func runSeed() {
 		log.Fatal(err)
 	}
 
-
 	adminHash, err := bcrypt.GenerateFromPassword([]byte("admin"), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatal(err)

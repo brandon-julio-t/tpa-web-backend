@@ -20,7 +20,7 @@ const (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	r := gin.Default()
