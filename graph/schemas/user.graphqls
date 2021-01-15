@@ -1,10 +1,34 @@
 type User {
     id: ID!
     accountName: String!
-    email: String!
     country: Country!
+    customUrl: String!
+    displayName: String!
+    email: String!
+    profilePictureBase64: String!
+    profileTheme: String!
+    realName: String!
+    summary: String!
+    walletBalance: Float!
+}
+
+scalar Upload
+
+input UpdateUser {
+    displayName: String!
+    realName: String!
+    customUrl: String!
+    summary: String!
+    countryId: ID!
+    avatar: Upload
+    profileTheme: String!
+}
+
+extend type Query {
+    getProfile(customUrl: String!): User!
 }
 
 extend type Mutation {
     register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
+    updateProfile(input: UpdateUser): User!
 }

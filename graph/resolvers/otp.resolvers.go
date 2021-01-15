@@ -29,10 +29,10 @@ func (r *mutationResolver) SendOtp(ctx context.Context, email string) (*bool, er
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>Staem Registration OTP</title>
 </head>
 <body>
-	Your STAEM registration OTP: %v
+	Your Staem registration OTP: %v
 </body>
 </html>
 `, otp)
@@ -41,7 +41,7 @@ func (r *mutationResolver) SendOtp(ctx context.Context, email string) (*bool, er
 		fmt.Sprintf(
 			"From: %v\r\n"+
 				"To: %v\r\n"+
-				"Subject: Testing\r\n"+
+				"Subject: Staem Registration OTP\r\n"+
 				"MIME-version: 1.0;\r\n"+
 				"Content-Type: text/html; charset=\"UTF-8\";\r\n"+
 				"\r\n"+

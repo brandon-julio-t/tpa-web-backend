@@ -49,36 +49,47 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		Login     func(childComplexity int, email string, password string) int
-		Logout    func(childComplexity int) int
-		Register  func(childComplexity int, accountName string, email string, password string, countryID int64) int
-		SendOtp   func(childComplexity int, email string) int
-		VerifyOtp func(childComplexity int, otp string) int
+		Login         func(childComplexity int, accountName string, password string) int
+		Logout        func(childComplexity int) int
+		Register      func(childComplexity int, accountName string, email string, password string, countryID int64) int
+		SendOtp       func(childComplexity int, email string) int
+		UpdateProfile func(childComplexity int, input *models.UpdateUser) int
+		VerifyOtp     func(childComplexity int, otp string) int
 	}
 
 	Query struct {
 		AllCountries func(childComplexity int) int
 		Auth         func(childComplexity int) int
+		GetProfile   func(childComplexity int, customURL string) int
 	}
 
 	User struct {
-		AccountName func(childComplexity int) int
-		Country     func(childComplexity int) int
-		Email       func(childComplexity int) int
-		ID          func(childComplexity int) int
+		AccountName          func(childComplexity int) int
+		Country              func(childComplexity int) int
+		CustomURL            func(childComplexity int) int
+		DisplayName          func(childComplexity int) int
+		Email                func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		ProfilePictureBase64 func(childComplexity int) int
+		ProfileTheme         func(childComplexity int) int
+		RealName             func(childComplexity int) int
+		Summary              func(childComplexity int) int
+		WalletBalance        func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	Login(ctx context.Context, email string, password string) (*models.User, error)
+	Login(ctx context.Context, accountName string, password string) (*models.User, error)
 	Logout(ctx context.Context) (*models.User, error)
 	SendOtp(ctx context.Context, email string) (*bool, error)
 	VerifyOtp(ctx context.Context, otp string) (*bool, error)
 	Register(ctx context.Context, accountName string, email string, password string, countryID int64) (*models.User, error)
+	UpdateProfile(ctx context.Context, input *models.UpdateUser) (*models.User, error)
 }
 type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
+	GetProfile(ctx context.Context, customURL string) (*models.User, error)
 }
 
 type executableSchema struct {
@@ -120,7 +131,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Login(childComplexity, args["email"].(string), args["password"].(string)), true
+		return e.complexity.Mutation.Login(childComplexity, args["accountName"].(string), args["password"].(string)), true
 
 	case "Mutation.logout":
 		if e.complexity.Mutation.Logout == nil {
@@ -153,6 +164,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SendOtp(childComplexity, args["email"].(string)), true
 
+	case "Mutation.updateProfile":
+		if e.complexity.Mutation.UpdateProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateProfile_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateProfile(childComplexity, args["input"].(*models.UpdateUser)), true
+
 	case "Mutation.verifyOTP":
 		if e.complexity.Mutation.VerifyOtp == nil {
 			break
@@ -179,6 +202,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Auth(childComplexity), true
 
+	case "Query.getProfile":
+		if e.complexity.Query.GetProfile == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getProfile_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetProfile(childComplexity, args["customUrl"].(string)), true
+
 	case "User.accountName":
 		if e.complexity.User.AccountName == nil {
 			break
@@ -193,6 +228,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Country(childComplexity), true
 
+	case "User.customUrl":
+		if e.complexity.User.CustomURL == nil {
+			break
+		}
+
+		return e.complexity.User.CustomURL(childComplexity), true
+
+	case "User.displayName":
+		if e.complexity.User.DisplayName == nil {
+			break
+		}
+
+		return e.complexity.User.DisplayName(childComplexity), true
+
 	case "User.email":
 		if e.complexity.User.Email == nil {
 			break
@@ -206,6 +255,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.profilePictureBase64":
+		if e.complexity.User.ProfilePictureBase64 == nil {
+			break
+		}
+
+		return e.complexity.User.ProfilePictureBase64(childComplexity), true
+
+	case "User.profileTheme":
+		if e.complexity.User.ProfileTheme == nil {
+			break
+		}
+
+		return e.complexity.User.ProfileTheme(childComplexity), true
+
+	case "User.realName":
+		if e.complexity.User.RealName == nil {
+			break
+		}
+
+		return e.complexity.User.RealName(childComplexity), true
+
+	case "User.summary":
+		if e.complexity.User.Summary == nil {
+			break
+		}
+
+		return e.complexity.User.Summary(childComplexity), true
+
+	case "User.walletBalance":
+		if e.complexity.User.WalletBalance == nil {
+			break
+		}
+
+		return e.complexity.User.WalletBalance(childComplexity), true
 
 	}
 	return 0, false
@@ -276,7 +360,7 @@ var sources = []*ast.Source{
 }
 
 type Mutation {
-    login(email: String!, password: String!): User!
+    login(accountName: String!, password: String!): User!
     logout: User!
 }
 `, BuiltIn: false},
@@ -297,12 +381,36 @@ extend type Query {
 	{Name: "graph/schemas/user.graphqls", Input: `type User {
     id: ID!
     accountName: String!
-    email: String!
     country: Country!
+    customUrl: String!
+    displayName: String!
+    email: String!
+    profilePictureBase64: String!
+    profileTheme: String!
+    realName: String!
+    summary: String!
+    walletBalance: Float!
+}
+
+scalar Upload
+
+input UpdateUser {
+    displayName: String!
+    realName: String!
+    customUrl: String!
+    summary: String!
+    countryId: ID!
+    avatar: Upload
+    profileTheme: String!
+}
+
+extend type Query {
+    getProfile(customUrl: String!): User!
 }
 
 extend type Mutation {
     register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
+    updateProfile(input: UpdateUser): User!
 }
 `, BuiltIn: false},
 }
@@ -316,14 +424,14 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["email"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+	if tmp, ok := rawArgs["accountName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountName"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["email"] = arg0
+	args["accountName"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["password"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
@@ -393,6 +501,21 @@ func (ec *executionContext) field_Mutation_sendOTP_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateProfile_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *models.UpdateUser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalOUpdateUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUpdateUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_verifyOTP_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -420,6 +543,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getProfile_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["customUrl"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("customUrl"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["customUrl"] = arg0
 	return args, nil
 }
 
@@ -556,7 +694,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Login(rctx, args["email"].(string), args["password"].(string))
+		return ec.resolvers.Mutation().Login(rctx, args["accountName"].(string), args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -728,6 +866,48 @@ func (ec *executionContext) _Mutation_register(ctx context.Context, field graphq
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateProfile_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateProfile(rctx, args["input"].(*models.UpdateUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_auth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -793,6 +973,48 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	res := resTmp.([]*models.Country)
 	fc.Result = res
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_getProfile(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getProfile_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetProfile(rctx, args["customUrl"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -936,6 +1158,111 @@ func (ec *executionContext) _User_accountName(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_country(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Country, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Country)
+	fc.Result = res
+	return ec.marshalNCountry2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountry(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_customUrl(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CustomURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_displayName(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DisplayName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -971,7 +1298,42 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_country(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_profilePictureBase64(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProfilePictureBase64(), nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_profileTheme(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -989,7 +1351,7 @@ func (ec *executionContext) _User_country(ctx context.Context, field graphql.Col
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Country, nil
+		return obj.ProfileTheme, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1001,9 +1363,114 @@ func (ec *executionContext) _User_country(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.Country)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNCountry2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountry(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_realName(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RealName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_summary(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Summary, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_walletBalance(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.WalletBalance, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2093,6 +2560,74 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj interface{}) (models.UpdateUser, error) {
+	var it models.UpdateUser
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "displayName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("displayName"))
+			it.DisplayName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "realName":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("realName"))
+			it.RealName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "customUrl":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("customUrl"))
+			it.CustomURL, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "summary":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("summary"))
+			it.Summary, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "countryId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("countryId"))
+			it.CountryID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "avatar":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatar"))
+			it.Avatar, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "profileTheme":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("profileTheme"))
+			it.ProfileTheme, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2167,6 +2702,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updateProfile":
+			out.Values[i] = ec._Mutation_updateProfile(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2218,6 +2758,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "getProfile":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getProfile(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -2254,13 +2808,48 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "country":
+			out.Values[i] = ec._User_country(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "customUrl":
+			out.Values[i] = ec._User_customUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "displayName":
+			out.Values[i] = ec._User_displayName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "country":
-			out.Values[i] = ec._User_country(ctx, field, obj)
+		case "profilePictureBase64":
+			out.Values[i] = ec._User_profilePictureBase64(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "profileTheme":
+			out.Values[i] = ec._User_profileTheme(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "realName":
+			out.Values[i] = ec._User_realName(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "summary":
+			out.Values[i] = ec._User_summary(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "walletBalance":
+			out.Values[i] = ec._User_walletBalance(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2586,6 +3175,21 @@ func (ec *executionContext) marshalNCountry2ᚖgithubᚗcomᚋbrandonᚑjulioᚑ
 	return ec._Country(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNID2int64(ctx context.Context, v interface{}) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2905,6 +3509,29 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) unmarshalOUpdateUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUpdateUser(ctx context.Context, v interface{}) (*models.UpdateUser, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputUpdateUser(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, v interface{}) (*graphql.Upload, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalUpload(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx context.Context, sel ast.SelectionSet, v *graphql.Upload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalUpload(*v)
 }
 
 func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx context.Context, sel ast.SelectionSet, v *models.User) graphql.Marshaler {

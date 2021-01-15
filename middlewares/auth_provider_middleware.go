@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"github.com/brandon-julio-t/tpa-web-backend/repositories"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -35,15 +36,15 @@ func (AuthProviderMiddleware) Create() func(context *gin.Context) {
 		}
 
 		claims, _ := token.Claims.(*models.UserJwtClaims)
-		var user models.User
 
-		if err := facades.UseDB().Debug().First(&user, claims.UserID).Error; err != nil {
+		user, err := new(repositories.UserRepository).GetByID(claims.UserID)
+		if err != nil {
 			log.Print(err)
 			c.Next()
 			return
 		}
 
-		ctx := context.WithValue(c.Request.Context(), authProviderMiddlewareKey, &user)
+		ctx := context.WithValue(c.Request.Context(), authProviderMiddlewareKey, user)
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}

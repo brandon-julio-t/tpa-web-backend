@@ -6,14 +6,10 @@ package resolvers
 import (
 	"context"
 
-	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"github.com/brandon-julio-t/tpa-web-backend/repositories"
 )
 
 func (r *queryResolver) AllCountries(ctx context.Context) ([]*models.Country, error) {
-	var countries []*models.Country
-	if err := facades.UseDB().Find(&countries).Error; err != nil {
-		return nil, err
-	}
-	return countries, nil
+	return new(repositories.CountryRepository).GetAll()
 }

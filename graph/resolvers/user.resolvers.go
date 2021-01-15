@@ -5,9 +5,13 @@ package resolvers
 
 import (
 	"context"
+	"errors"
+	"io/ioutil"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"github.com/brandon-julio-t/tpa-web-backend/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -22,18 +26,47 @@ func (r *mutationResolver) Register(ctx context.Context, accountName string, ema
 		return nil, err
 	}
 
-	user := models.User{
+	return new(repositories.UserRepository).Create(&models.User{
 		BaseModel:   models.BaseModel{},
 		AccountName: accountName,
 		Email:       email,
 		Password:    string(hash),
 		CountryID:   country.ID,
 		Country:     country,
+	})
+}
+
+func (r *mutationResolver) UpdateProfile(ctx context.Context, input *models.UpdateUser) (*models.User, error) {
+	user := middlewares.UseAuth(ctx)
+	if user == nil {
+		return nil, errors.New("not authenticated")
 	}
 
-	if err := facades.UseDB().Create(&user).Error; err != nil {
+	country, err := new(repositories.CountryRepository).GetByID(input.CountryID)
+	if err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	if input.Avatar != nil {
+		profilePicture, err := ioutil.ReadAll(input.Avatar.File)
+		if err != nil {
+			return nil, err
+		}
+
+		user.ProfilePicture = profilePicture
+	}
+
+	user.DisplayName = input.DisplayName
+	user.RealName = input.RealName
+	user.CustomURL = input.CustomURL
+	user.Summary = input.Summary
+	user.ProfileTheme = input.ProfileTheme
+	user.CountryID = input.CountryID
+	user.Country = *country
+
+	return new(repositories.UserRepository).Update(user)
+}
+
+func (r *queryResolver) GetProfile(ctx context.Context, customURL string) (*models.User, error) {
+	return new(repositories.UserRepository).GetByCustomURL(customURL)
 }

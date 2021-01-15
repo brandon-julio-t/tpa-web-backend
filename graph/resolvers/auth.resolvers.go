@@ -13,14 +13,14 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"github.com/brandon-julio-t/tpa-web-backend/repositories"
 	jwt "github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*models.User, error) {
-	var user models.User
-
-	if err := facades.UseDB().First(&user, "email = ?", email).Error; err != nil {
+func (r *mutationResolver) Login(ctx context.Context, accountName string, password string) (*models.User, error) {
+	user, err := new(repositories.UserRepository).GetByAccountName(accountName)
+	if err != nil {
 		return nil, err
 	}
 
@@ -51,13 +51,13 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 		HttpOnly: true,
 	}).String())
 
-	return &user, nil
+	return user, nil
 }
 
 func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 	user := middlewares.UseAuth(ctx)
 	if user == nil {
-		return nil, errors.New("not signed in")
+		return nil, errors.New("not authenticated")
 	}
 
 	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
@@ -65,16 +65,18 @@ func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 		Value:    "",
 		Expires:  time.Time{},
 		HttpOnly: true,
+		MaxAge:   0,
 	}).String())
 
 	return user, nil
 }
 
 func (r *queryResolver) Auth(ctx context.Context) (*models.User, error) {
-	if user := middlewares.UseAuth(ctx); user != nil {
+	user := middlewares.UseAuth(ctx)
+	if user != nil {
 		return user, nil
 	}
-	return nil, errors.New("not signed in")
+	return nil, errors.New("not authenticated")
 }
 
 // Mutation returns generated.MutationResolver implementation.
