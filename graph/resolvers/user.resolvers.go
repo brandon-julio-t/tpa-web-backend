@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -67,6 +68,29 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input *models.Upda
 	return new(repositories.UserRepository).Update(user)
 }
 
+func (r *mutationResolver) SuspendAccount(ctx context.Context, id int64) (*models.User, error) {
+	repo := new(repositories.UserRepository)
+
+	user, err := repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	user.SuspendedAt = time.Now()
+
+	return repo.Update(user)
+}
+
 func (r *queryResolver) GetProfile(ctx context.Context, customURL string) (*models.User, error) {
 	return new(repositories.UserRepository).GetByCustomURL(customURL)
+}
+
+func (r *queryResolver) GetAllUsers(ctx context.Context) ([]*models.User, error) {
+	if user := middlewares.UseAuth(ctx); user != nil {
+		if user.AccountName != "Admin" {
+			return nil, errors.New("not authorized")
+		}
+		return new(repositories.UserRepository).GetAll()
+	}
+	return nil, errors.New("not authenticated")
 }

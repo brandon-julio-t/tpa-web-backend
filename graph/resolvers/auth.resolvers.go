@@ -24,6 +24,10 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 		return nil, err
 	}
 
+	if !user.SuspendedAt.IsZero() {
+		return nil, errors.New("account suspended")
+	}
+
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 		return nil, err
 	}

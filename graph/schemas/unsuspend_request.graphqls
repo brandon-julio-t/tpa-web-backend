@@ -1,0 +1,9 @@
+extend type Query {
+    getAllUnsuspendRequests: [User!]!
+}
+
+extend type Mutation {
+    unsuspendRequest(accountName: String!): String!
+    approveUnsuspendRequests(id: ID!): User!
+    denyUnsuspendRequests(id: ID!): User!
+}

@@ -2,10 +2,12 @@ package models
 
 import (
 	"encoding/base64"
+	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 )
 
 type User struct {
@@ -22,6 +24,7 @@ type User struct {
 	RealName       string
 	Summary        string
 	WalletBalance  float64
+	SuspendedAt    time.Time `gorm:"index"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -41,4 +44,12 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 func (u *User) ProfilePictureBase64() string {
 	return base64.StdEncoding.EncodeToString(u.ProfilePicture)
+}
+
+func (u *User) ReportCounts() int64 {
+	var count int64
+	if err := facades.UseDB().Model(&Report{}).Where("reported_id = ?", u.ID).Count(&count).Error; err != nil {
+		return -1
+	}
+	return count
 }

@@ -10,9 +10,12 @@ type User {
     realName: String!
     summary: String!
     walletBalance: Float!
+    suspendedAt: Time
+    reportCounts: Int!
 }
 
 scalar Upload
+scalar Time
 
 input UpdateUser {
     displayName: String!
@@ -26,9 +29,11 @@ input UpdateUser {
 
 extend type Query {
     getProfile(customUrl: String!): User!
+    getAllUsers: [User!]!
 }
 
 extend type Mutation {
     register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
     updateProfile(input: UpdateUser): User!
+    suspendAccount(id: ID!): User!
 }

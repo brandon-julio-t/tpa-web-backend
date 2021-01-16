@@ -8,16 +8,24 @@ import (
 
 type UserRepository struct{}
 
+func (UserRepository) GetAll() ([]*models.User, error) {
+	var users []*models.User
+	if err := usePreloaded().Find(&users, "account_name != ?", "Admin").Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func usePreloaded() *gorm.DB {
+	return facades.UseDB().Preload("Country")
+}
+
 func (UserRepository) GetByID(id int64) (*models.User, error) {
 	var user models.User
 	if err := usePreloaded().First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
-}
-
-func usePreloaded() *gorm.DB {
-	return facades.UseDB().Preload("Country")
 }
 
 func (UserRepository) GetByAccountName(accountName string) (*models.User, error) {

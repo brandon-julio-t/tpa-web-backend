@@ -1,0 +1,15 @@
+type Report {
+    id: ID!
+    reporter: User!
+    reported: User!
+    description: String!
+    createdAt: Time!
+}
+
+extend type Query {
+    getReportsByUser(id: ID!): [Report!]!
+}
+
+extend type Mutation {
+    submitReport(userId: ID!, description: String!): Report!
+}
