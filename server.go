@@ -2,8 +2,10 @@ package main
 
 import (
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/brandon-julio-t/tpa-web-backend/facades"
+	"github.com/brandon-julio-t/tpa-web-backend/factories"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/resolvers"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
@@ -11,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
+	"os"
 	"time"
 )
 
@@ -41,8 +44,15 @@ func main() {
 	})
 
 	r.POST(graphqlEndpoint, func(context *gin.Context) {
-		resolver := &resolvers.Resolver{}
-		handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver})).ServeHTTP(context.Writer, context.Request)
+		gql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
+			Resolvers: &resolvers.Resolver{},
+		}))
+
+		gql.Use(extension.AutomaticPersistedQuery{
+			Cache: factories.NewCache(os.Getenv("REDIS_URL"), 24*time.Hour),
+		})
+
+		gql.ServeHTTP(context.Writer, context.Request)
 	})
 
 	log.Fatal(r.Run())
