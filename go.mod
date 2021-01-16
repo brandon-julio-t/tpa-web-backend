@@ -6,6 +6,7 @@ go 1.15
 
 require (
 	github.com/99designs/gqlgen v0.13.0
+	github.com/bxcodec/faker/v3 v3.5.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
@@ -17,4 +18,5 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gorm.io/driver/postgres v1.0.6
 	gorm.io/gorm v1.20.11
+	syreclabs.com/go/faker v1.2.3 // indirect
 )

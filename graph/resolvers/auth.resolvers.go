@@ -75,6 +75,38 @@ func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 	return user, nil
 }
 
+func (r *mutationResolver) RefreshToken(ctx context.Context) (bool, error) {
+	user := middlewares.UseAuth(ctx)
+	if user == nil {
+		return false, errors.New("not authenticated")
+	}
+
+	jwtExpireDuration, err := time.ParseDuration("15m")
+	if err != nil {
+		return false, err
+	}
+
+	jwtToken, err := jwt.NewWithClaims(jwt.SigningMethodHS512, models.UserJwtClaims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(jwtExpireDuration).Unix(),
+		},
+		UserID: user.ID,
+	}).SignedString(facades.UseSecret())
+
+	if err != nil {
+		return false, err
+	}
+
+	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+		Name:     "jwt",
+		Value:    jwtToken,
+		Expires:  time.Now().Add(jwtExpireDuration),
+		HttpOnly: true,
+	}).String())
+
+	return true, nil
+}
+
 func (r *queryResolver) Auth(ctx context.Context) (*models.User, error) {
 	user := middlewares.UseAuth(ctx)
 	if user != nil {

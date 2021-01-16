@@ -1,0 +1,8 @@
+type GameTag {
+    id: ID!
+    name: String!
+}
+
+extend type Query {
+    getAllGameTags: [GameTag!]!
+}

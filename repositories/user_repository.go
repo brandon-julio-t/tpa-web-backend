@@ -12,8 +12,7 @@ func (UserRepository) GetAll(page int) ([]*models.User, error) {
 	userPerPage := 5
 	var users []*models.User
 	if err := usePreloaded().
-		Offset((page-1)*userPerPage).
-		Limit(userPerPage).
+		Scopes(facades.UsePagination(page, userPerPage)).
 		Find(&users, "account_name != ?", "Admin").Error; err != nil {
 		return nil, err
 	}

@@ -1,0 +1,36 @@
+type Game {
+    id: ID!
+    createdAt: Time!
+    title: String!
+    description: String!
+    price: Float!
+    bannerBase64: String!
+    slideshows: [GameSlideshow!]!
+    tags: [GameTag!]!
+    systemRequirements: String!
+}
+
+type GameSlideshow {
+    game: Game!
+    fileBase64: String!
+}
+
+extend type Query {
+    getAllGames(page: Int!): [Game!]!
+}
+
+extend type Mutation {
+    createGame(input: CreateGame!): Game!
+    updateGame(input: CreateGame!): Game!
+    deleteGame(id: ID!): Game!
+}
+
+input CreateGame {
+    title: String!
+    description: String!
+    price: Float!
+    banner: Upload!
+    slideshows: [Upload!]!
+    gameTags: [ID!]!
+    systemRequirements: String!
+}
