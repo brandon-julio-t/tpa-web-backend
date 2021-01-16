@@ -29,7 +29,7 @@ input UpdateUser {
 
 extend type Query {
     getProfile(customUrl: String!): User!
-    getAllUsers: [User!]!
+    getAllUsers(page: Int!): [User!]!
 }
 
 extend type Mutation {

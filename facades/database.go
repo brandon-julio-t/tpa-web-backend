@@ -4,15 +4,26 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
 	"os"
+	"time"
 )
 
 var databaseSingleton *gorm.DB = nil
 
 func init() {
 	if dbUrl, ok := os.LookupEnv("DATABASE_URL"); ok {
-		db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
+		db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{
+			Logger: logger.New(
+				log.New(os.Stdout, "\r\n", log.LstdFlags),
+				logger.Config{
+					SlowThreshold: time.Second,
+					LogLevel:      logger.Info,
+					Colorful:      true,
+				},
+			),
+		})
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -35,7 +46,6 @@ func init() {
 
 		databaseSingleton = db
 	}
-
 }
 
 func UseDB() *gorm.DB {

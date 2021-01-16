@@ -67,7 +67,7 @@ type ComplexityRoot struct {
 		AllCountries            func(childComplexity int) int
 		Auth                    func(childComplexity int) int
 		GetAllUnsuspendRequests func(childComplexity int) int
-		GetAllUsers             func(childComplexity int) int
+		GetAllUsers             func(childComplexity int, page int) int
 		GetProfile              func(childComplexity int, customURL string) int
 		GetReportsByUser        func(childComplexity int, id int64) int
 	}
@@ -116,7 +116,7 @@ type QueryResolver interface {
 	GetReportsByUser(ctx context.Context, id int64) ([]*models.Report, error)
 	GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error)
 	GetProfile(ctx context.Context, customURL string) (*models.User, error)
-	GetAllUsers(ctx context.Context) ([]*models.User, error)
+	GetAllUsers(ctx context.Context, page int) ([]*models.User, error)
 }
 
 type executableSchema struct {
@@ -301,7 +301,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.GetAllUsers(childComplexity), true
+		args, err := ec.field_Query_getAllUsers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetAllUsers(childComplexity, args["page"].(int)), true
 
 	case "Query.getProfile":
 		if e.complexity.Query.GetProfile == nil {
@@ -596,7 +601,7 @@ input UpdateUser {
 
 extend type Query {
     getProfile(customUrl: String!): User!
-    getAllUsers: [User!]!
+    getAllUsers(page: Int!): [User!]!
 }
 
 extend type Mutation {
@@ -819,6 +824,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getAllUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
 	return args, nil
 }
 
@@ -1611,9 +1631,16 @@ func (ec *executionContext) _Query_getAllUsers(ctx context.Context, field graphq
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_getAllUsers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetAllUsers(rctx)
+		return ec.resolvers.Query().GetAllUsers(rctx, args["page"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4173,6 +4200,21 @@ func (ec *executionContext) unmarshalNID2int64(ctx context.Context, v interface{
 
 func (ec *executionContext) marshalNID2int64(ctx context.Context, sel ast.SelectionSet, v int64) graphql.Marshaler {
 	res := graphql.MarshalInt64(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

@@ -8,9 +8,13 @@ import (
 
 type UserRepository struct{}
 
-func (UserRepository) GetAll() ([]*models.User, error) {
+func (UserRepository) GetAll(page int) ([]*models.User, error) {
+	userPerPage := 5
 	var users []*models.User
-	if err := usePreloaded().Find(&users, "account_name != ?", "Admin").Error; err != nil {
+	if err := usePreloaded().
+		Offset((page-1)*userPerPage).
+		Limit(userPerPage).
+		Find(&users, "account_name != ?", "Admin").Error; err != nil {
 		return nil, err
 	}
 	return users, nil
