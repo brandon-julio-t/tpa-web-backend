@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
@@ -48,13 +49,23 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 		return nil, err
 	}
 
-	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
-		Name:     "jwt",
-		Value:    jwtToken,
-		Expires:  time.Now().Add(jwtExpireDuration),
-		HttpOnly: true,
-		SameSite: http.SameSiteNoneMode,
-	}).String())
+	if os.Getenv("ENV") == "production" {
+		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+			Name:     "jwt",
+			Value:    jwtToken,
+			Expires:  time.Now().Add(jwtExpireDuration),
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
+		}).String())
+	} else {
+		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+			Name:     "jwt",
+			Value:    jwtToken,
+			Expires:  time.Now().Add(jwtExpireDuration),
+			HttpOnly: true,
+		}).String())
+	}
 
 	return user, nil
 }
@@ -65,13 +76,25 @@ func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 		return nil, errors.New("not authenticated")
 	}
 
-	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Expires:  time.Time{},
-		HttpOnly: true,
-		MaxAge:   0,
-	}).String())
+	if os.Getenv("ENV") == "production" {
+		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+			Name:     "jwt",
+			Value:    "",
+			Expires:  time.Time{},
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
+			MaxAge:   0,
+		}).String())
+	} else {
+		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+			Name:     "jwt",
+			Value:    "",
+			Expires:  time.Time{},
+			HttpOnly: true,
+			MaxAge:   0,
+		}).String())
+	}
 
 	return user, nil
 }
@@ -98,12 +121,27 @@ func (r *mutationResolver) RefreshToken(ctx context.Context) (bool, error) {
 		return false, err
 	}
 
-	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
-		Name:     "jwt",
-		Value:    jwtToken,
-		Expires:  time.Now().Add(jwtExpireDuration),
-		HttpOnly: true,
-	}).String())
+	var cookie *http.Cookie
+
+	if os.Getenv("ENV") == "production" {
+		cookie = &http.Cookie{
+			Name:     "jwt",
+			Value:    jwtToken,
+			Expires:  time.Now().Add(jwtExpireDuration),
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
+		}
+	} else {
+		cookie = &http.Cookie{
+			Name:     "jwt",
+			Value:    jwtToken,
+			Expires:  time.Now().Add(jwtExpireDuration),
+			HttpOnly: true,
+		}
+	}
+
+	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", cookie.String())
 
 	return true, nil
 }
