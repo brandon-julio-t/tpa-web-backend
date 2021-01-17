@@ -11,7 +11,7 @@ type UserRepository struct{}
 func (UserRepository) GetAll(page int) ([]*models.User, error) {
 	userPerPage := 5
 	var users []*models.User
-	if err := usePreloaded().
+	if err := usePreloadedUser().
 		Scopes(facades.UsePagination(page, userPerPage)).
 		Find(&users, "account_name != ?", "Admin").Error; err != nil {
 		return nil, err
@@ -19,13 +19,13 @@ func (UserRepository) GetAll(page int) ([]*models.User, error) {
 	return users, nil
 }
 
-func usePreloaded() *gorm.DB {
-	return facades.UseDB().Preload("Country")
+func usePreloadedUser() *gorm.DB {
+	return facades.UseDB().Preload("Country").Preload("ProfilePicture")
 }
 
 func (UserRepository) GetByID(id int64) (*models.User, error) {
 	var user models.User
-	if err := usePreloaded().First(&user, id).Error; err != nil {
+	if err := usePreloadedUser().First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -33,7 +33,7 @@ func (UserRepository) GetByID(id int64) (*models.User, error) {
 
 func (UserRepository) GetByAccountName(accountName string) (*models.User, error) {
 	var user models.User
-	if err := usePreloaded().First(&user, "account_name = ?", accountName).Error; err != nil {
+	if err := usePreloadedUser().First(&user, "account_name = ?", accountName).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -41,7 +41,7 @@ func (UserRepository) GetByAccountName(accountName string) (*models.User, error)
 
 func (UserRepository) GetByCustomURL(customUrl string) (*models.User, error) {
 	var user models.User
-	if err := usePreloaded().First(&user, "custom_url = ?", customUrl).Error; err != nil {
+	if err := usePreloadedUser().First(&user, "custom_url = ?", customUrl).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

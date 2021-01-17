@@ -10,6 +10,7 @@ import (
 func init() {
 	if err := facades.UseDB().Transaction(func(tx *gorm.DB) error {
 		for _, seed := range []func() error{
+			database_seeds.SeedAssetFiles,
 			database_seeds.SeedCountries,
 			database_seeds.SeedUsers,
 			database_seeds.SeedGameTags,

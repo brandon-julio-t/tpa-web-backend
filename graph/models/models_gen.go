@@ -17,6 +17,7 @@ type CreateGame struct {
 }
 
 type UpdateGame struct {
+	ID                 int64             `json:"id"`
 	Title              string            `json:"title"`
 	Description        string            `json:"description"`
 	Price              float64           `json:"price"`

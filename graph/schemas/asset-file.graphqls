@@ -1,0 +1,4 @@
+type AssetFile {
+    id: ID!
+    contentType: String!
+}

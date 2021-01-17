@@ -5,7 +5,7 @@ type User {
     customUrl: String!
     displayName: String!
     email: String!
-    profilePictureBase64: String!
+    profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
     summary: String!

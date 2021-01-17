@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -21,7 +20,7 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input models.CreateGa
 }
 
 func (r *mutationResolver) UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error) {
-	panic(fmt.Errorf("not implemented"))
+	return new(repositories.GameRepository).Update(input)
 }
 
 func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Game, error) {

@@ -6,10 +6,11 @@ package resolvers
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
-	"github.com/mailjet/mailjet-apiv3-go"
-	"os"
+	mailjet "github.com/mailjet/mailjet-apiv3-go"
 )
 
 func (r *mutationResolver) SendOtp(ctx context.Context, email string) (bool, error) {

@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/base64"
 	"time"
 )
 
@@ -11,12 +10,9 @@ type Game struct {
 	Title              string
 	Description        string
 	Price              float64
-	Banner             []byte
+	BannerID           int64
+	Banner             AssetFile
 	Slideshows         []*GameSlideshow
 	GameTags           []*GameTag `gorm:"many2many:game_tag_mappings;"`
 	SystemRequirements string
-}
-
-func (g *Game) BannerBase64() string {
-	return base64.StdEncoding.EncodeToString(g.Banner)
 }

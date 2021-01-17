@@ -45,13 +45,18 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AssetFile struct {
+		ContentType func(childComplexity int) int
+		ID          func(childComplexity int) int
+	}
+
 	Country struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
 	}
 
 	Game struct {
-		BannerBase64       func(childComplexity int) int
+		Banner             func(childComplexity int) int
 		CreatedAt          func(childComplexity int) int
 		Description        func(childComplexity int) int
 		ID                 func(childComplexity int) int
@@ -63,9 +68,8 @@ type ComplexityRoot struct {
 	}
 
 	GameSlideshow struct {
-		ContentType func(childComplexity int) int
-		FileBase64  func(childComplexity int) int
-		Game        func(childComplexity int) int
+		File func(childComplexity int) int
+		Game func(childComplexity int) int
 	}
 
 	GameTag struct {
@@ -112,19 +116,19 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AccountName          func(childComplexity int) int
-		Country              func(childComplexity int) int
-		CustomURL            func(childComplexity int) int
-		DisplayName          func(childComplexity int) int
-		Email                func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		ProfilePictureBase64 func(childComplexity int) int
-		ProfileTheme         func(childComplexity int) int
-		RealName             func(childComplexity int) int
-		ReportCounts         func(childComplexity int) int
-		Summary              func(childComplexity int) int
-		SuspendedAt          func(childComplexity int) int
-		WalletBalance        func(childComplexity int) int
+		AccountName    func(childComplexity int) int
+		Country        func(childComplexity int) int
+		CustomURL      func(childComplexity int) int
+		DisplayName    func(childComplexity int) int
+		Email          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		ProfilePicture func(childComplexity int) int
+		ProfileTheme   func(childComplexity int) int
+		RealName       func(childComplexity int) int
+		ReportCounts   func(childComplexity int) int
+		Summary        func(childComplexity int) int
+		SuspendedAt    func(childComplexity int) int
+		WalletBalance  func(childComplexity int) int
 	}
 }
 
@@ -175,6 +179,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
+	case "AssetFile.contentType":
+		if e.complexity.AssetFile.ContentType == nil {
+			break
+		}
+
+		return e.complexity.AssetFile.ContentType(childComplexity), true
+
+	case "AssetFile.id":
+		if e.complexity.AssetFile.ID == nil {
+			break
+		}
+
+		return e.complexity.AssetFile.ID(childComplexity), true
+
 	case "Country.id":
 		if e.complexity.Country.ID == nil {
 			break
@@ -189,12 +207,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Country.Name(childComplexity), true
 
-	case "Game.bannerBase64":
-		if e.complexity.Game.BannerBase64 == nil {
+	case "Game.banner":
+		if e.complexity.Game.Banner == nil {
 			break
 		}
 
-		return e.complexity.Game.BannerBase64(childComplexity), true
+		return e.complexity.Game.Banner(childComplexity), true
 
 	case "Game.createdAt":
 		if e.complexity.Game.CreatedAt == nil {
@@ -252,19 +270,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Game.Title(childComplexity), true
 
-	case "GameSlideshow.contentType":
-		if e.complexity.GameSlideshow.ContentType == nil {
+	case "GameSlideshow.file":
+		if e.complexity.GameSlideshow.File == nil {
 			break
 		}
 
-		return e.complexity.GameSlideshow.ContentType(childComplexity), true
-
-	case "GameSlideshow.fileBase64":
-		if e.complexity.GameSlideshow.FileBase64 == nil {
-			break
-		}
-
-		return e.complexity.GameSlideshow.FileBase64(childComplexity), true
+		return e.complexity.GameSlideshow.File(childComplexity), true
 
 	case "GameSlideshow.game":
 		if e.complexity.GameSlideshow.Game == nil {
@@ -622,12 +633,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.ID(childComplexity), true
 
-	case "User.profilePictureBase64":
-		if e.complexity.User.ProfilePictureBase64 == nil {
+	case "User.profilePicture":
+		if e.complexity.User.ProfilePicture == nil {
 			break
 		}
 
-		return e.complexity.User.ProfilePictureBase64(childComplexity), true
+		return e.complexity.User.ProfilePicture(childComplexity), true
 
 	case "User.profileTheme":
 		if e.complexity.User.ProfileTheme == nil {
@@ -735,6 +746,11 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
+	{Name: "graph/schemas/asset-file.graphqls", Input: `type AssetFile {
+    id: ID!
+    contentType: String!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/auth.graphqls", Input: `type Query {
     auth: User
 }
@@ -760,7 +776,7 @@ extend type Query {
     title: String!
     description: String!
     price: Float!
-    bannerBase64: String!
+    banner: AssetFile!
     slideshows: [GameSlideshow!]!
     tags: [GameTag!]!
     systemRequirements: String!
@@ -768,8 +784,7 @@ extend type Query {
 
 type GameSlideshow {
     game: Game!
-    fileBase64: String!
-    contentType: String!
+    file: AssetFile!
 }
 
 extend type Query {
@@ -794,6 +809,7 @@ input CreateGame {
 }
 
 input UpdateGame {
+    id: ID!
     title: String!
     description: String!
     price: Float!
@@ -848,7 +864,7 @@ extend type Mutation {
     customUrl: String!
     displayName: String!
     email: String!
-    profilePictureBase64: String!
+    profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
     summary: String!
@@ -1256,6 +1272,76 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _AssetFile_id(ctx context.Context, field graphql.CollectedField, obj *models.AssetFile) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AssetFile",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AssetFile_contentType(ctx context.Context, field graphql.CollectedField, obj *models.AssetFile) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "AssetFile",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ContentType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Country_id(ctx context.Context, field graphql.CollectedField, obj *models.Country) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1501,7 +1587,7 @@ func (ec *executionContext) _Game_price(ctx context.Context, field graphql.Colle
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Game_bannerBase64(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+func (ec *executionContext) _Game_banner(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1512,14 +1598,14 @@ func (ec *executionContext) _Game_bannerBase64(ctx context.Context, field graphq
 		Object:     "Game",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
+		IsMethod:   false,
 		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.BannerBase64(), nil
+		return obj.Banner, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1531,9 +1617,9 @@ func (ec *executionContext) _Game_bannerBase64(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(models.AssetFile)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Game_slideshows(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
@@ -1676,42 +1762,7 @@ func (ec *executionContext) _GameSlideshow_game(ctx context.Context, field graph
 	return ec.marshalNGame2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _GameSlideshow_fileBase64(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "GameSlideshow",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FileBase64(), nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _GameSlideshow_contentType(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
+func (ec *executionContext) _GameSlideshow_file(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1729,7 +1780,7 @@ func (ec *executionContext) _GameSlideshow_contentType(ctx context.Context, fiel
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ContentType, nil
+		return obj.File, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1741,9 +1792,9 @@ func (ec *executionContext) _GameSlideshow_contentType(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(models.AssetFile)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _GameTag_id(ctx context.Context, field graphql.CollectedField, obj *models.GameTag) (ret graphql.Marshaler) {
@@ -3235,7 +3286,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_profilePictureBase64(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_profilePicture(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3246,14 +3297,14 @@ func (ec *executionContext) _User_profilePictureBase64(ctx context.Context, fiel
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
+		IsMethod:   false,
 		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ProfilePictureBase64(), nil
+		return obj.ProfilePicture, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3265,9 +3316,9 @@ func (ec *executionContext) _User_profilePictureBase64(ctx context.Context, fiel
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(models.AssetFile)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_profileTheme(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -4638,6 +4689,14 @@ func (ec *executionContext) unmarshalInputUpdateGame(ctx context.Context, obj in
 
 	for k, v := range asMap {
 		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "title":
 			var err error
 
@@ -4776,6 +4835,38 @@ func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj in
 
 // region    **************************** object.gotpl ****************************
 
+var assetFileImplementors = []string{"AssetFile"}
+
+func (ec *executionContext) _AssetFile(ctx context.Context, sel ast.SelectionSet, obj *models.AssetFile) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, assetFileImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AssetFile")
+		case "id":
+			out.Values[i] = ec._AssetFile_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "contentType":
+			out.Values[i] = ec._AssetFile_contentType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var countryImplementors = []string{"Country"}
 
 func (ec *executionContext) _Country(ctx context.Context, sel ast.SelectionSet, obj *models.Country) graphql.Marshaler {
@@ -4844,8 +4935,8 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "bannerBase64":
-			out.Values[i] = ec._Game_bannerBase64(ctx, field, obj)
+		case "banner":
+			out.Values[i] = ec._Game_banner(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -4900,13 +4991,8 @@ func (ec *executionContext) _GameSlideshow(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "fileBase64":
-			out.Values[i] = ec._GameSlideshow_fileBase64(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "contentType":
-			out.Values[i] = ec._GameSlideshow_contentType(ctx, field, obj)
+		case "file":
+			out.Values[i] = ec._GameSlideshow_file(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5295,8 +5381,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "profilePictureBase64":
-			out.Values[i] = ec._User_profilePictureBase64(ctx, field, obj)
+		case "profilePicture":
+			out.Values[i] = ec._User_profilePicture(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5582,6 +5668,10 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 // endregion **************************** object.gotpl ****************************
 
 // region    ***************************** type.gotpl *****************************
+
+func (ec *executionContext) marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx context.Context, sel ast.SelectionSet, v models.AssetFile) graphql.Marshaler {
+	return ec._AssetFile(ctx, sel, &v)
+}
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)

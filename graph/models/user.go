@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/base64"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,20 +10,21 @@ import (
 )
 
 type User struct {
-	ID             int64  `gorm:"primaryKey"`
-	AccountName    string `gorm:"uniqueIndex"`
-	Country        Country
-	CountryID      int64
-	CustomURL      string `gorm:"uniqueIndex"`
-	DisplayName    string
-	Email          string `gorm:"uniqueIndex"`
-	Password       string
-	ProfilePicture []byte
-	ProfileTheme   string
-	RealName       string
-	Summary        string
-	WalletBalance  float64
-	SuspendedAt    time.Time `gorm:"index"`
+	ID               int64  `gorm:"primaryKey"`
+	AccountName      string `gorm:"uniqueIndex"`
+	Country          Country
+	CountryID        int64
+	CustomURL        string `gorm:"uniqueIndex"`
+	DisplayName      string
+	Email            string `gorm:"uniqueIndex"`
+	Password         string
+	ProfilePictureID int64
+	ProfilePicture   AssetFile
+	ProfileTheme     string
+	RealName         string
+	Summary          string
+	WalletBalance    float64
+	SuspendedAt      time.Time `gorm:"index"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -35,15 +35,11 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	u.ProfileTheme = "#4B5563"
-	u.ProfilePicture = defaultProfilePicture
+	u.ProfilePicture = AssetFile{File: defaultProfilePicture, ContentType: "image/png"}
 	u.DisplayName = u.AccountName
 	u.CustomURL = uuid.Must(uuid.NewRandom()).String()
 
 	return nil
-}
-
-func (u *User) ProfilePictureBase64() string {
-	return base64.StdEncoding.EncodeToString(u.ProfilePicture)
 }
 
 func (u *User) ReportCounts() int64 {

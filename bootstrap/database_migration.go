@@ -13,6 +13,7 @@ func init() {
 		&models.RegisterVerificationToken{},
 		&models.Report{},
 		&models.UnsuspendRequest{},
+		&models.AssetFile{},
 		&models.Game{},
 		&models.GameSlideshow{},
 		&models.GameTag{},

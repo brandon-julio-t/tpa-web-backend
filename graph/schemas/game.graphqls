@@ -4,7 +4,7 @@ type Game {
     title: String!
     description: String!
     price: Float!
-    bannerBase64: String!
+    banner: AssetFile!
     slideshows: [GameSlideshow!]!
     tags: [GameTag!]!
     systemRequirements: String!
@@ -12,8 +12,7 @@ type Game {
 
 type GameSlideshow {
     game: Game!
-    fileBase64: String!
-    contentType: String!
+    file: AssetFile!
 }
 
 extend type Query {
@@ -38,6 +37,7 @@ input CreateGame {
 }
 
 input UpdateGame {
+    id: ID!
     title: String!
     description: String!
     price: Float!

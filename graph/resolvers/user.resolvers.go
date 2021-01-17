@@ -53,7 +53,11 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input *models.Upda
 			return nil, err
 		}
 
-		user.ProfilePicture = profilePicture
+		user.ProfilePicture.File = profilePicture
+		user.ProfilePicture.ContentType = input.Avatar.ContentType
+		if err := facades.UseDB().Save(&user.ProfilePicture).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	user.DisplayName = input.DisplayName
