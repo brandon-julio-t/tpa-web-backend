@@ -53,6 +53,7 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 		Value:    jwtToken,
 		Expires:  time.Now().Add(jwtExpireDuration),
 		HttpOnly: true,
+		SameSite: http.SameSiteNoneMode,
 	}).String())
 
 	return user, nil
