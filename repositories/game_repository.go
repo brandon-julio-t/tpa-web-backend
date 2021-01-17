@@ -4,6 +4,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"io/ioutil"
+	"log"
 )
 
 type GameRepository struct{}
@@ -11,6 +12,11 @@ type GameRepository struct{}
 func (GameRepository) GetAll(page int) ([]*models.Game, error) {
 	var games []*models.Game
 	return games, facades.UseDB().Scopes(facades.UsePagination(page, 3)).Preload("Slideshows").Preload("GameTags").Find(&games).Error
+}
+
+func (GameRepository) GetById(id int64) (*models.Game, error) {
+	var game models.Game
+	return &game, facades.UseDB().Preload("Slideshows").Preload("GameTags").First(&game, id).Error
 }
 
 func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
@@ -22,15 +28,16 @@ func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
 	var slideshows []*models.GameSlideshow
 
 	for _, slideshowInput := range input.Slideshows {
+		log.Print(slideshowInput.ContentType)
+
 		data, err := ioutil.ReadAll(slideshowInput.File)
 		if err != nil {
 			return nil, err
 		}
 
 		slideshows = append(slideshows, &models.GameSlideshow{
-			GameID: 0,
-			Game:   models.Game{},
-			File:   data,
+			File:        data,
+			ContentType: slideshowInput.ContentType,
 		})
 	}
 
@@ -63,7 +70,20 @@ func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
 	return &game, nil
 }
 
-func (GameRepository) Delete(id int64) (*models.Game, error)  {
+func (GameRepository) Delete(id int64) (*models.Game, error) {
 	var game models.Game
-	return &game, facades.UseDB().Delete(&game, id).Error
+
+	if err := facades.UseDB().Preload("Slideshows").Preload("GameTags").First(&game, id).Error; err != nil {
+		return nil, err
+	}
+
+	if err := facades.UseDB().Model(&game).Association("GameTags").Clear(); err != nil {
+		return nil, err
+	}
+
+	if err := facades.UseDB().Delete(game.Slideshows).Error; err != nil {
+		return nil, err
+	}
+
+	return &game, facades.UseDB().Delete(&game).Error
 }

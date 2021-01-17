@@ -20,7 +20,7 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input models.CreateGa
 	return new(repositories.GameRepository).Create(input)
 }
 
-func (r *mutationResolver) UpdateGame(ctx context.Context, input models.CreateGame) (*models.Game, error) {
+func (r *mutationResolver) UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -30,6 +30,10 @@ func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Ga
 
 func (r *queryResolver) GetAllGames(ctx context.Context, page int) ([]*models.Game, error) {
 	return new(repositories.GameRepository).GetAll(page)
+}
+
+func (r *queryResolver) GetGameByID(ctx context.Context, id int64) (*models.Game, error) {
+	return new(repositories.GameRepository).GetById(id)
 }
 
 // Game returns generated.GameResolver implementation.

@@ -1,9 +1,13 @@
 package models
 
-import "encoding/base64"
+import (
+	"encoding/base64"
+	"time"
+)
 
 type Game struct {
-	BaseModel
+	ID                 int64 `gorm:"primaryKey;autoIncrement:true"`
+	CreatedAt          time.Time
 	Title              string
 	Description        string
 	Price              float64

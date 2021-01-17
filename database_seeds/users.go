@@ -26,15 +26,15 @@ func SeedUsers() error {
 	}
 
 	for _, user := range []*models.User{
-		{AccountName: "User", Email: "user@user.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "BR", Email: "br@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "CC", Email: "cc@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "ST", Email: "st@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "VN", Email: "vn@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "TC", Email: "tc@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "LL", Email: "ll@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "GA", Email: "ga@slc.com", Password: string(userHash), CountryID: 420},
-		{AccountName: "JP", Email: "jp@slc.com", Password: string(userHash), CountryID: 420},
+		{AccountName: "User", Email: "user@user.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "BR", Email: "br@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "CC", Email: "cc@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "ST", Email: "st@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "VN", Email: "vn@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "TC", Email: "tc@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "LL", Email: "ll@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "GA", Email: "ga@slc.com", Password: string(userHash), CountryID: 69},
+		{AccountName: "JP", Email: "jp@slc.com", Password: string(userHash), CountryID: 69},
 	} {
 		facades.UseDB().Clauses(clause.OnConflict{DoNothing: true}).Create(user)
 	}

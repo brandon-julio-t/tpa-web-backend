@@ -14,6 +14,7 @@ require (
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/google/uuid v1.1.4
 	github.com/joho/godotenv v1.3.0
+	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394
 	github.com/vektah/gqlparser/v2 v2.1.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gorm.io/driver/postgres v1.0.6

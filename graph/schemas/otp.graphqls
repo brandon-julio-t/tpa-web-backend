@@ -1,4 +1,4 @@
 extend type Mutation {
-    sendOTP(email: String!): Boolean
-    verifyOTP(otp: String!): Boolean
+    sendOTP(email: String!): Boolean!
+    verifyOTP(otp: String!): Boolean!
 }

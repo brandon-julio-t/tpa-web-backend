@@ -8,8 +8,8 @@ import (
 
 func init() {
 	if err := facades.UseDB().AutoMigrate(
-		&models.User{},
 		&models.Country{},
+		&models.User{},
 		&models.RegisterVerificationToken{},
 		&models.Report{},
 		&models.UnsuspendRequest{},

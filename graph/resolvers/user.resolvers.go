@@ -28,7 +28,6 @@ func (r *mutationResolver) Register(ctx context.Context, accountName string, ema
 	}
 
 	return new(repositories.UserRepository).Create(&models.User{
-		BaseModel:   models.BaseModel{},
 		AccountName: accountName,
 		Email:       email,
 		Password:    string(hash),

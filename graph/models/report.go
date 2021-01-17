@@ -1,7 +1,10 @@
 package models
 
+import "time"
+
 type Report struct {
-	BaseModel
+	ID          int64 `gorm:"primaryKey"`
+	CreatedAt   time.Time
 	ReporterID  int64 `gorm:"primaryKey"`
 	Reporter    User
 	ReportedID  int64 `gorm:"primaryKey"`

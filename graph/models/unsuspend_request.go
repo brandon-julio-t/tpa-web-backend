@@ -1,7 +1,7 @@
 package models
 
 type UnsuspendRequest struct {
-	BaseModel
+	ID     int64 `gorm:"primaryKey"`
 	UserID int64
 	User   User
 }

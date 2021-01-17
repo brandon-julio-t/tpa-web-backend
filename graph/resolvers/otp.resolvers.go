@@ -6,75 +6,53 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"net/smtp"
-	"os"
-	"strings"
-
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"github.com/mailjet/mailjet-apiv3-go"
+	"os"
 )
 
-func (r *mutationResolver) SendOtp(ctx context.Context, email string) (*bool, error) {
-	sender := os.Getenv("MAILTRAP_EMAIL")
-	receivers := []string{email}
-
+func (r *mutationResolver) SendOtp(ctx context.Context, email string) (bool, error) {
 	otp := facades.UseOTP()
+
 	if err := facades.UseDB().Create(&models.RegisterVerificationToken{Token: otp}).Error; err != nil {
-		return nil, err
+		return false, err
 	}
 
-	html := fmt.Sprintf(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staem Registration OTP</title>
-</head>
-<body>
-	Your Staem registration OTP: %v
-</body>
-</html>
-`, otp)
-
-	message :=
-		fmt.Sprintf(
-			"From: %v\r\n"+
-				"To: %v\r\n"+
-				"Subject: Staem Registration OTP\r\n"+
-				"MIME-version: 1.0;\r\n"+
-				"Content-Type: text/html; charset=\"UTF-8\";\r\n"+
-				"\r\n"+
-				"%v\r\n",
-			sender,
-			strings.Join(receivers, ","),
-			html,
-		)
-
-	if err := smtp.SendMail(
-		os.Getenv("MAILTRAP_ADDRESS"),
-		smtp.PlainAuth("", os.Getenv("MAILTRAP_USERNAME"), os.Getenv("MAILTRAP_PASSWORD"), os.Getenv("MAILTRAP_HOST")),
-		sender,
-		receivers,
-		[]byte(message)); err != nil {
-		return nil, err
+	mailjetClient := mailjet.NewMailjetClient(os.Getenv("MAILJET_PUBLIC_KEY"), os.Getenv("MAILJET_PRIVATE_KEY"))
+	messagesInfo := []mailjet.InfoMessagesV31{
+		{
+			From: &mailjet.RecipientV31{
+				Email: "brandon.julio.t@icloud.com",
+				Name:  "STAEM",
+			},
+			To: &mailjet.RecipientsV31{
+				mailjet.RecipientV31{
+					Email: email,
+				},
+			},
+			Subject:  "STAEM create account OTP",
+			TextPart: fmt.Sprintf("Your Staem registration OTP: %v", otp),
+			CustomID: "StaemCreateAccountOTP",
+		},
+	}
+	messages := mailjet.MessagesV31{Info: messagesInfo}
+	if _, err := mailjetClient.SendMailV31(&messages); err != nil {
+		return false, err
 	}
 
-	result := true
-	return &result, nil
+	return true, nil
 }
 
-func (r *mutationResolver) VerifyOtp(ctx context.Context, otp string) (*bool, error) {
+func (r *mutationResolver) VerifyOtp(ctx context.Context, otp string) (bool, error) {
 	var registerVerificationToken models.RegisterVerificationToken
 	if err := facades.UseDB().First(&registerVerificationToken, "token = ?", otp).Error; err != nil {
-		return nil, err
+		return false, err
 	}
-
-	result := true
 
 	if err := facades.UseDB().Delete(&registerVerificationToken).Error; err != nil {
-		return nil, err
+		return false, err
 	}
 
-	return &result, nil
+	return true, nil
 }

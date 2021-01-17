@@ -11,7 +11,7 @@ import (
 )
 
 type User struct {
-	BaseModel
+	ID             int64  `gorm:"primaryKey"`
 	AccountName    string `gorm:"uniqueIndex"`
 	Country        Country
 	CountryID      int64
