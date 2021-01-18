@@ -7,6 +7,10 @@ import (
 )
 
 func init() {
+	if err := facades.UseDB().Exec("drop table game_tag_mappings").Error; err != nil {
+		log.Fatal(err)
+	}
+
 	if err := facades.UseDB().Migrator().DropTable(
 		&models.Country{},
 		&models.User{},

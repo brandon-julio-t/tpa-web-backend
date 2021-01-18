@@ -1,7 +1,7 @@
 package models
 
 type AssetFile struct {
-	ID          int64 `gorm:"primaryKey;autoIncrement:true"`
+	ID          int64 `gorm:"primaryKey"`
 	File        []byte
 	ContentType string
 }

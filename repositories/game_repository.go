@@ -29,52 +29,57 @@ func (GameRepository) GetById(id int64) (*models.Game, error) {
 
 func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
 	var game models.Game
-	return &game, facades.UseDB().Transaction(func(tx *gorm.DB) error {
-		banner, err := ioutil.ReadAll(input.Banner.File)
+
+	banner, err := ioutil.ReadAll(input.Banner.File)
+	if err != nil {
+		return nil, err
+	}
+
+	var slideshows []*models.GameSlideshow
+
+	for _, slideshowInput := range input.Slideshows {
+		data, err := ioutil.ReadAll(slideshowInput.File)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		var slideshows []*models.GameSlideshow
+		slideshows = append(slideshows, &models.GameSlideshow{
+			File: models.AssetFile{
+				File:        data,
+				ContentType: slideshowInput.ContentType,
+			},
+		})
+	}
 
-		for _, slideshowInput := range input.Slideshows {
-			data, err := ioutil.ReadAll(slideshowInput.File)
-			if err != nil {
-				return err
-			}
+	var gameTags []*models.GameTag
 
-			slideshows = append(slideshows, &models.GameSlideshow{
-				File: models.AssetFile{
-					File:        data,
-					ContentType: slideshowInput.ContentType,
-				},
-			})
+	for _, gameTagId := range input.GameTags {
+		var gameTag models.GameTag
+
+		if err := facades.UseDB().First(&gameTag, gameTagId).Error; err != nil {
+			return nil, err
 		}
 
-		var gameTags []*models.GameTag
+		gameTags = append(gameTags, &gameTag)
+	}
 
-		for _, gameTagId := range input.GameTags {
-			var gameTag models.GameTag
+	gameBanner := models.AssetFile{File: banner, ContentType: input.Banner.ContentType}
+	if err := facades.UseDB().Create(&gameBanner).Error; err != nil {
+		return nil, err
+	}
 
-			if err := tx.First(&gameTag, gameTagId).Error; err != nil {
-				return err
-			}
+	game = models.Game{
+		Title:              input.Title,
+		Description:        input.Description,
+		Price:              input.Price,
+		BannerID:           gameBanner.ID,
+		Banner:             gameBanner,
+		Slideshows:         slideshows,
+		GameTags:           gameTags,
+		SystemRequirements: input.SystemRequirements,
+	}
 
-			gameTags = append(gameTags, &gameTag)
-		}
-
-		game = models.Game{
-			Title:              input.Title,
-			Description:        input.Description,
-			Price:              input.Price,
-			Banner:             models.AssetFile{File: banner, ContentType: input.Banner.ContentType},
-			Slideshows:         slideshows,
-			GameTags:           gameTags,
-			SystemRequirements: input.SystemRequirements,
-		}
-
-		return tx.Create(&game).Error
-	})
+	return &game, facades.UseDB().Create(&game).Error
 }
 
 func (r GameRepository) Update(input models.UpdateGame) (*models.Game, error) {

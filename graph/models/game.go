@@ -11,7 +11,7 @@ type Game struct {
 	Description        string
 	Price              float64
 	BannerID           int64
-	Banner             AssetFile `gorm:"foreignKey:ID"`
+	Banner             AssetFile
 	Slideshows         []*GameSlideshow
 	GameTags           []*GameTag `gorm:"many2many:game_tag_mappings;"`
 	SystemRequirements string
