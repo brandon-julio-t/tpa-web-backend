@@ -80,7 +80,9 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ApproveUnsuspendRequests func(childComplexity int, id int64) int
 		CreateGame               func(childComplexity int, input models.CreateGame) int
+		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
 		DeleteGame               func(childComplexity int, id int64) int
+		DeletePromo              func(childComplexity int, id int64) int
 		DenyUnsuspendRequests    func(childComplexity int, id int64) int
 		Login                    func(childComplexity int, accountName string, password string) int
 		Logout                   func(childComplexity int) int
@@ -92,7 +94,14 @@ type ComplexityRoot struct {
 		UnsuspendRequest         func(childComplexity int, accountName string) int
 		UpdateGame               func(childComplexity int, input models.UpdateGame) int
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
+		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
 		VerifyOtp                func(childComplexity int, otp string) int
+	}
+
+	Promo struct {
+		Discount func(childComplexity int) int
+		EndAt    func(childComplexity int) int
+		ID       func(childComplexity int) int
 	}
 
 	Query struct {
@@ -105,6 +114,8 @@ type ComplexityRoot struct {
 		GetGameByID             func(childComplexity int, id int64) int
 		GetProfile              func(childComplexity int, customURL string) int
 		GetReportsByUser        func(childComplexity int, id int64) int
+		Promo                   func(childComplexity int, id int64) int
+		Promos                  func(childComplexity int) int
 	}
 
 	Report struct {
@@ -144,6 +155,9 @@ type MutationResolver interface {
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
+	CreatePromo(ctx context.Context, discount float64, endAt time.Time) (*models.Promo, error)
+	UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error)
+	DeletePromo(ctx context.Context, id int64) (*models.Promo, error)
 	SubmitReport(ctx context.Context, userID int64, description string) (*models.Report, error)
 	UnsuspendRequest(ctx context.Context, accountName string) (string, error)
 	ApproveUnsuspendRequests(ctx context.Context, id int64) (*models.User, error)
@@ -158,6 +172,8 @@ type QueryResolver interface {
 	GetAllGames(ctx context.Context, page int) ([]*models.Game, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
+	Promos(ctx context.Context) ([]*models.Promo, error)
+	Promo(ctx context.Context, id int64) (*models.Promo, error)
 	GetReportsByUser(ctx context.Context, id int64) ([]*models.Report, error)
 	GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error)
 	GetProfile(ctx context.Context, customURL string) (*models.User, error)
@@ -322,6 +338,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateGame(childComplexity, args["input"].(models.CreateGame)), true
 
+	case "Mutation.createPromo":
+		if e.complexity.Mutation.CreatePromo == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPromo_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePromo(childComplexity, args["discount"].(float64), args["endAt"].(time.Time)), true
+
 	case "Mutation.deleteGame":
 		if e.complexity.Mutation.DeleteGame == nil {
 			break
@@ -333,6 +361,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGame(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.deletePromo":
+		if e.complexity.Mutation.DeletePromo == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deletePromo_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeletePromo(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.denyUnsuspendRequests":
 		if e.complexity.Mutation.DenyUnsuspendRequests == nil {
@@ -456,6 +496,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateProfile(childComplexity, args["input"].(*models.UpdateUser)), true
 
+	case "Mutation.updatePromo":
+		if e.complexity.Mutation.UpdatePromo == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updatePromo_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdatePromo(childComplexity, args["id"].(int64), args["discount"].(float64), args["endAt"].(time.Time)), true
+
 	case "Mutation.verifyOTP":
 		if e.complexity.Mutation.VerifyOtp == nil {
 			break
@@ -467,6 +519,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.VerifyOtp(childComplexity, args["otp"].(string)), true
+
+	case "Promo.discount":
+		if e.complexity.Promo.Discount == nil {
+			break
+		}
+
+		return e.complexity.Promo.Discount(childComplexity), true
+
+	case "Promo.endAt":
+		if e.complexity.Promo.EndAt == nil {
+			break
+		}
+
+		return e.complexity.Promo.EndAt(childComplexity), true
+
+	case "Promo.id":
+		if e.complexity.Promo.ID == nil {
+			break
+		}
+
+		return e.complexity.Promo.ID(childComplexity), true
 
 	case "Query.allCountries":
 		if e.complexity.Query.AllCountries == nil {
@@ -555,6 +628,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetReportsByUser(childComplexity, args["id"].(int64)), true
+
+	case "Query.promo":
+		if e.complexity.Query.Promo == nil {
+			break
+		}
+
+		args, err := ec.field_Query_promo_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Promo(childComplexity, args["id"].(int64)), true
+
+	case "Query.promos":
+		if e.complexity.Query.Promos == nil {
+			break
+		}
+
+		return e.complexity.Query.Promos(childComplexity), true
 
 	case "Report.createdAt":
 		if e.complexity.Report.CreatedAt == nil {
@@ -832,6 +924,23 @@ extend type Query {
     verifyOTP(otp: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/promo.graphqls", Input: `type Promo {
+    id: ID!
+    discount: Float!
+    endAt: Time!
+}
+
+extend type Query {
+    promos: [Promo!]!
+    promo(id: ID!): Promo!
+}
+
+extend type Mutation {
+    createPromo(discount: Float!, endAt: Time!): Promo!
+    updatePromo(id: ID!, discount: Float!, endAt: Time!): Promo!
+    deletePromo(id: ID!): Promo!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/report.graphqls", Input: `type Report {
     id: ID!
     reporter: User!
@@ -934,7 +1043,46 @@ func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createPromo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 float64
+	if tmp, ok := rawArgs["discount"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discount"))
+		arg0, err = ec.unmarshalNFloat2float64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["discount"] = arg0
+	var arg1 time.Time
+	if tmp, ok := rawArgs["endAt"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endAt"))
+		arg1, err = ec.unmarshalNTime2timeᚐTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["endAt"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deletePromo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -1129,6 +1277,39 @@ func (ec *executionContext) field_Mutation_updateProfile_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updatePromo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 float64
+	if tmp, ok := rawArgs["discount"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("discount"))
+		arg1, err = ec.unmarshalNFloat2float64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["discount"] = arg1
+	var arg2 time.Time
+	if tmp, ok := rawArgs["endAt"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endAt"))
+		arg2, err = ec.unmarshalNTime2timeᚐTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["endAt"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_verifyOTP_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1220,6 +1401,21 @@ func (ec *executionContext) field_Query_getProfile_args(ctx context.Context, raw
 }
 
 func (ec *executionContext) field_Query_getReportsByUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_promo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -2189,6 +2385,132 @@ func (ec *executionContext) _Mutation_verifyOTP(ctx context.Context, field graph
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createPromo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createPromo_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePromo(rctx, args["discount"].(float64), args["endAt"].(time.Time))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updatePromo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updatePromo_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdatePromo(rctx, args["id"].(int64), args["discount"].(float64), args["endAt"].(time.Time))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deletePromo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deletePromo_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeletePromo(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_submitReport(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2483,6 +2805,111 @@ func (ec *executionContext) _Mutation_suspendAccount(ctx context.Context, field 
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Promo_id(ctx context.Context, field graphql.CollectedField, obj *models.Promo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Promo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Promo_discount(ctx context.Context, field graphql.CollectedField, obj *models.Promo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Promo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Discount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Promo_endAt(ctx context.Context, field graphql.CollectedField, obj *models.Promo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Promo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EndAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_auth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2667,6 +3094,83 @@ func (ec *executionContext) _Query_getAllGameTags(ctx context.Context, field gra
 	res := resTmp.([]*models.GameTag)
 	fc.Result = res
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_promos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Promos(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_promo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_promo_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Promo(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getReportsByUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5094,6 +5598,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createPromo":
+			out.Values[i] = ec._Mutation_createPromo(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updatePromo":
+			out.Values[i] = ec._Mutation_updatePromo(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deletePromo":
+			out.Values[i] = ec._Mutation_deletePromo(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "submitReport":
 			out.Values[i] = ec._Mutation_submitReport(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5126,6 +5645,43 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "suspendAccount":
 			out.Values[i] = ec._Mutation_suspendAccount(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var promoImplementors = []string{"Promo"}
+
+func (ec *executionContext) _Promo(ctx context.Context, sel ast.SelectionSet, obj *models.Promo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, promoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Promo")
+		case "id":
+			out.Values[i] = ec._Promo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "discount":
+			out.Values[i] = ec._Promo_discount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "endAt":
+			out.Values[i] = ec._Promo_endAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5217,6 +5773,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getAllGameTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "promos":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_promos(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "promo":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_promo(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -5977,6 +6561,57 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNPromo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx context.Context, sel ast.SelectionSet, v models.Promo) graphql.Marshaler {
+	return ec._Promo(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPromo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Promo) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx context.Context, sel ast.SelectionSet, v *models.Promo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Promo(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNReport2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐReport(ctx context.Context, sel ast.SelectionSet, v models.Report) graphql.Marshaler {

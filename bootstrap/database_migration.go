@@ -21,6 +21,7 @@ func init() {
 		&models.Game{},
 		&models.GameSlideshow{},
 		&models.GameTag{},
+		&models.Promo{},
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -35,6 +36,7 @@ func init() {
 		&models.Game{},
 		&models.GameSlideshow{},
 		&models.GameTag{},
+		&models.Promo{},
 	); err != nil {
 		log.Fatal(err)
 	}

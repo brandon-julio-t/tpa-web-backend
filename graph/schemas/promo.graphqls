@@ -1,0 +1,16 @@
+type Promo {
+    id: ID!
+    discount: Float!
+    endAt: Time!
+}
+
+extend type Query {
+    promos: [Promo!]!
+    promo(id: ID!): Promo!
+}
+
+extend type Mutation {
+    createPromo(discount: Float!, endAt: Time!): Promo!
+    updatePromo(id: ID!, discount: Float!, endAt: Time!): Promo!
+    deletePromo(id: ID!): Promo!
+}
