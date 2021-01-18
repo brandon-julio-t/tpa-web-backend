@@ -5,7 +5,6 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"gorm.io/gorm"
 	"io/ioutil"
-	"log"
 )
 
 type GameRepository struct{}
@@ -29,56 +28,53 @@ func (GameRepository) GetById(id int64) (*models.Game, error) {
 }
 
 func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
-	banner, err := ioutil.ReadAll(input.Banner.File)
-	if err != nil {
-		return nil, err
-	}
-
-	var slideshows []*models.GameSlideshow
-
-	for _, slideshowInput := range input.Slideshows {
-		log.Print(slideshowInput.ContentType)
-
-		data, err := ioutil.ReadAll(slideshowInput.File)
+	var game models.Game
+	return &game, facades.UseDB().Transaction(func(tx *gorm.DB) error {
+		banner, err := ioutil.ReadAll(input.Banner.File)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		slideshows = append(slideshows, &models.GameSlideshow{
-			File: models.AssetFile{
-				File:        data,
-				ContentType: slideshowInput.ContentType,
-			},
-		})
-	}
+		var slideshows []*models.GameSlideshow
 
-	var gameTags []*models.GameTag
+		for _, slideshowInput := range input.Slideshows {
+			data, err := ioutil.ReadAll(slideshowInput.File)
+			if err != nil {
+				return err
+			}
 
-	for _, gameTagId := range input.GameTags {
-		var gameTag models.GameTag
-
-		if err := facades.UseDB().First(&gameTag, gameTagId).Error; err != nil {
-			return nil, err
+			slideshows = append(slideshows, &models.GameSlideshow{
+				File: models.AssetFile{
+					File:        data,
+					ContentType: slideshowInput.ContentType,
+				},
+			})
 		}
 
-		gameTags = append(gameTags, &gameTag)
-	}
+		var gameTags []*models.GameTag
 
-	game := models.Game{
-		Title:              input.Title,
-		Description:        input.Description,
-		Price:              input.Price,
-		Banner:             models.AssetFile{File: banner, ContentType: input.Banner.ContentType},
-		Slideshows:         slideshows,
-		GameTags:           gameTags,
-		SystemRequirements: input.SystemRequirements,
-	}
+		for _, gameTagId := range input.GameTags {
+			var gameTag models.GameTag
 
-	if err := facades.UseDB().Create(&game).Error; err != nil {
-		return nil, err
-	}
+			if err := tx.First(&gameTag, gameTagId).Error; err != nil {
+				return err
+			}
 
-	return &game, nil
+			gameTags = append(gameTags, &gameTag)
+		}
+
+		game = models.Game{
+			Title:              input.Title,
+			Description:        input.Description,
+			Price:              input.Price,
+			Banner:             models.AssetFile{File: banner, ContentType: input.Banner.ContentType},
+			Slideshows:         slideshows,
+			GameTags:           gameTags,
+			SystemRequirements: input.SystemRequirements,
+		}
+
+		return tx.Create(&game).Error
+	})
 }
 
 func (r GameRepository) Update(input models.UpdateGame) (*models.Game, error) {

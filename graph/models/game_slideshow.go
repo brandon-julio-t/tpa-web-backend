@@ -5,5 +5,5 @@ type GameSlideshow struct {
 	GameID int64
 	Game   Game
 	FileID int64
-	File   AssetFile
+	File   AssetFile `gorm:"foreignKey:ID"`
 }
