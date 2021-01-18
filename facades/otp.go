@@ -1,12 +1,14 @@
 package facades
 
 import (
+	"github.com/google/uuid"
 	"math/rand"
-	"time"
 )
 
 func UseOTP() string {
-	rand.Seed(time.Now().Unix())
+	t1, t2 := uuid.Must(uuid.NewRandom()).Time().UnixTime()
+
+	rand.Seed(t1 + t2)
 
 	alphanumeric := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	otp := make([]rune, 5)

@@ -86,6 +86,7 @@ type ComplexityRoot struct {
 		DenyUnsuspendRequests    func(childComplexity int, id int64) int
 		Login                    func(childComplexity int, accountName string, password string) int
 		Logout                   func(childComplexity int) int
+		RedeemWallet             func(childComplexity int, code string) int
 		RefreshToken             func(childComplexity int) int
 		Register                 func(childComplexity int, accountName string, email string, password string, countryID int64) int
 		SendOtp                  func(childComplexity int, email string) int
@@ -159,6 +160,7 @@ type MutationResolver interface {
 	UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error)
 	DeletePromo(ctx context.Context, id int64) (*models.Promo, error)
 	SubmitReport(ctx context.Context, userID int64, description string) (*models.Report, error)
+	RedeemWallet(ctx context.Context, code string) (bool, error)
 	UnsuspendRequest(ctx context.Context, accountName string) (string, error)
 	ApproveUnsuspendRequests(ctx context.Context, id int64) (*models.User, error)
 	DenyUnsuspendRequests(ctx context.Context, id int64) (*models.User, error)
@@ -404,6 +406,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity), true
+
+	case "Mutation.redeemWallet":
+		if e.complexity.Mutation.RedeemWallet == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_redeemWallet_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RedeemWallet(childComplexity, args["code"].(string)), true
 
 	case "Mutation.refreshToken":
 		if e.complexity.Mutation.RefreshToken == nil {
@@ -957,6 +971,9 @@ extend type Mutation {
     submitReport(userId: ID!, description: String!): Report!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/top_up_code.graphqls", Input: `extend type Mutation {
+    redeemWallet(code: String!): Boolean!
+}`, BuiltIn: false},
 	{Name: "graph/schemas/unsuspend_request.graphqls", Input: `extend type Query {
     getAllUnsuspendRequests: [User!]!
 }
@@ -1133,6 +1150,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 		}
 	}
 	args["password"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_redeemWallet_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["code"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["code"] = arg0
 	return args, nil
 }
 
@@ -2551,6 +2583,48 @@ func (ec *executionContext) _Mutation_submitReport(ctx context.Context, field gr
 	res := resTmp.(*models.Report)
 	fc.Result = res
 	return ec.marshalNReport2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐReport(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_redeemWallet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_redeemWallet_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RedeemWallet(rctx, args["code"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_unsuspendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5615,6 +5689,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "submitReport":
 			out.Values[i] = ec._Mutation_submitReport(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "redeemWallet":
+			out.Values[i] = ec._Mutation_redeemWallet(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
