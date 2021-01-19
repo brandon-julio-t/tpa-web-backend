@@ -4,8 +4,13 @@ type Promo {
     endAt: Time!
 }
 
+type PromoPagination {
+    data: [Promo!]!
+    totalPages: Int!
+}
+
 extend type Query {
-    promos: [Promo!]!
+    promos(page: Int!): PromoPagination!
     promo(id: ID!): Promo!
 }
 

@@ -4,18 +4,19 @@ import (
 	"context"
 	"github.com/go-redis/redis"
 	"log"
+	"os"
 	"time"
 )
 
-type Cache struct {
+type ApqCache struct {
 	client redis.UniversalClient
 	ttl    time.Duration
 }
 
 const apqPrefix = "apq:"
 
-func NewCache(redisUrl string, ttl time.Duration) *Cache {
-	option, err := redis.ParseURL(redisUrl)
+func NewApqCache() *ApqCache {
+	option, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,14 +27,14 @@ func NewCache(redisUrl string, ttl time.Duration) *Cache {
 		log.Fatal(err)
 	}
 
-	return &Cache{client: client, ttl: ttl}
+	return &ApqCache{client: client, ttl: 24 * time.Hour}
 }
 
-func (c *Cache) Add(ctx context.Context, key string, value interface{}) {
+func (c *ApqCache) Add(ctx context.Context, key string, value interface{}) {
 	c.client.Set(apqPrefix+key, value, c.ttl)
 }
 
-func (c *Cache) Get(ctx context.Context, key string) (interface{}, bool) {
+func (c *ApqCache) Get(ctx context.Context, key string) (interface{}, bool) {
 	s, err := c.client.Get(apqPrefix + key).Result()
 	if err != nil {
 		return struct{}{}, false

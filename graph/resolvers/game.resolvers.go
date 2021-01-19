@@ -27,7 +27,7 @@ func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Ga
 	return new(repositories.GameRepository).Delete(id)
 }
 
-func (r *queryResolver) GetAllGames(ctx context.Context, page int) ([]*models.Game, error) {
+func (r *queryResolver) Games(ctx context.Context, page int) (*models.GamePagination, error) {
 	return new(repositories.GameRepository).GetAll(page)
 }
 

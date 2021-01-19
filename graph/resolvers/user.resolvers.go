@@ -88,7 +88,7 @@ func (r *queryResolver) GetProfile(ctx context.Context, customURL string) (*mode
 	return new(repositories.UserRepository).GetByCustomURL(customURL)
 }
 
-func (r *queryResolver) GetAllUsers(ctx context.Context, page int) ([]*models.User, error) {
+func (r *queryResolver) Users(ctx context.Context, page int) (*models.UserPagination, error) {
 	if user := middlewares.UseAuth(ctx); user != nil {
 		if user.AccountName != "Admin" {
 			return nil, errors.New("not authorized")

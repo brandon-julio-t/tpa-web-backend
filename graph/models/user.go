@@ -1,11 +1,16 @@
 package models
 
 import (
+	"context"
+	"fmt"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
+	"github.com/go-redis/redis"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"io/ioutil"
+	"log"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -16,7 +21,8 @@ type User struct {
 	CountryID        int64
 	CustomURL        string `gorm:"uniqueIndex"`
 	DisplayName      string
-	Email            string `gorm:"uniqueIndex"`
+	Email            string  `gorm:"uniqueIndex"`
+	Friends          []*User `gorm:"many2many:friends;"`
 	Password         string
 	ProfilePictureID int64
 	ProfilePicture   AssetFile
@@ -42,10 +48,21 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-func (u *User) ReportCounts() int64 {
+func (u *User) ReportCounts(ctx context.Context) int64 {
+	cacheKey := fmt.Sprintf("users:%v:reports_count", u.ID)
+	cached, err := facades.UseCache().Get(ctx, cacheKey).Result()
+	if err != redis.Nil && cached != "" {
+		result, err := strconv.ParseInt(cached, 10, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return result
+	}
+
 	var count int64
 	if err := facades.UseDB().Model(&Report{}).Where("reported_id = ?", u.ID).Count(&count).Error; err != nil {
 		return -1
 	}
+	facades.UseCache().Set(ctx, cacheKey, count, 10*time.Second)
 	return count
 }

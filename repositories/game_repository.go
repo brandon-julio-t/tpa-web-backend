@@ -5,13 +5,26 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"gorm.io/gorm"
 	"io/ioutil"
+	"math"
 )
 
 type GameRepository struct{}
 
-func (GameRepository) GetAll(page int) ([]*models.Game, error) {
+func (GameRepository) GetAll(page int) (*models.GamePagination, error) {
 	var games []*models.Game
-	return games, usePreloadedGame().Scopes(facades.UsePagination(page, 3)).Find(&games).Error
+	var totalGames int64
+	if err := usePreloadedGame().
+		Model(&models.Game{}).
+		Count(&totalGames).
+		Scopes(facades.UsePagination(page, 3)).
+		Find(&games).
+		Error; err != nil {
+		return nil, err
+	}
+	return &models.GamePagination{
+		Data:       games,
+		TotalPages: int(math.Ceil(float64(totalGames)/float64(3))),
+	}, nil
 }
 
 func usePreloadedGame() *gorm.DB {

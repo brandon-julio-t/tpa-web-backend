@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
@@ -38,9 +39,23 @@ func (r *mutationResolver) DeletePromo(ctx context.Context, id int64) (*models.P
 	return &promo, facades.UseDB().Delete(&promo).Error
 }
 
-func (r *queryResolver) Promos(ctx context.Context) ([]*models.Promo, error) {
+func (r *queryResolver) Promos(ctx context.Context, page int) (*models.PromoPagination, error) {
 	var promos []*models.Promo
-	return promos, facades.UseDB().Find(&promos).Error
+	var count int64
+	pageSize := 5
+
+	if err := facades.UseDB().
+		Model(&models.Promo{}).
+		Count(&count).
+		Scopes(facades.UsePagination(page, pageSize)).
+		Find(&promos).Error; err != nil {
+		return nil, err
+	}
+
+	return &models.PromoPagination{
+		Data:       promos,
+		TotalPages: int(math.Ceil(float64(count) / float64(pageSize))),
+	}, nil
 }
 
 func (r *queryResolver) Promo(ctx context.Context, id int64) (*models.Promo, error) {

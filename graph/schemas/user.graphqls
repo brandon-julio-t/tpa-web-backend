@@ -1,3 +1,6 @@
+scalar Upload
+scalar Time
+
 type User {
     id: ID!
     accountName: String!
@@ -14,8 +17,21 @@ type User {
     reportCounts: Int!
 }
 
-scalar Upload
-scalar Time
+type UserPagination {
+    data: [User!]!
+    totalPages: Int!
+}
+
+extend type Query {
+    getProfile(customUrl: String!): User!
+    users(page: Int!): UserPagination!
+}
+
+extend type Mutation {
+    register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
+    updateProfile(input: UpdateUser): User!
+    suspendAccount(id: ID!): User!
+}
 
 input UpdateUser {
     displayName: String!
@@ -25,15 +41,4 @@ input UpdateUser {
     countryId: ID!
     avatar: Upload
     profileTheme: String!
-}
-
-extend type Query {
-    getProfile(customUrl: String!): User!
-    getAllUsers(page: Int!): [User!]!
-}
-
-extend type Mutation {
-    register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
-    updateProfile(input: UpdateUser): User!
-    suspendAccount(id: ID!): User!
 }

@@ -4,19 +4,26 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"gorm.io/gorm"
+	"math"
 )
 
 type UserRepository struct{}
 
-func (UserRepository) GetAll(page int) ([]*models.User, error) {
+func (UserRepository) GetAll(page int) (*models.UserPagination, error) {
 	userPerPage := 5
 	var users []*models.User
+	var count int64
 	if err := usePreloadedUser().
+		Model(&models.User{}).
+		Count(&count).
 		Scopes(facades.UsePagination(page, userPerPage)).
 		Find(&users, "account_name != ?", "Admin").Error; err != nil {
 		return nil, err
 	}
-	return users, nil
+	return &models.UserPagination{
+		Data:       users,
+		TotalPages: int(math.Ceil(float64(count)/float64(userPerPage))),
+	}, nil
 }
 
 func usePreloadedUser() *gorm.DB {

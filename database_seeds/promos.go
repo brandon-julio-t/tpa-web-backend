@@ -17,6 +17,7 @@ func SeedPromos() error {
 		{Discount: 40, EndAt: time.Now()},
 		{Discount: 45, EndAt: time.Now()},
 		{Discount: 50, EndAt: time.Now()},
+		{Discount: 55, EndAt: time.Now()},
 	}
 	return facades.UseDB().Create(&promos).Error
 }

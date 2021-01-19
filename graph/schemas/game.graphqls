@@ -15,8 +15,13 @@ type GameSlideshow {
     file: AssetFile!
 }
 
+type GamePagination {
+    data: [Game!]!
+    totalPages: Int!
+}
+
 extend type Query {
-    getAllGames(page: Int!): [Game!]!
+    games(page: Int!): GamePagination!
     getGameById(id: ID!): Game!
 }
 

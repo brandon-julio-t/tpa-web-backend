@@ -7,7 +7,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/brandon-julio-t/tpa-web-backend/bootstrap"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
-	_ "github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/factories"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -15,19 +14,13 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Print(err)
-	}
-
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
@@ -70,7 +63,7 @@ func main() {
 	}))
 
 	gql.Use(extension.AutomaticPersistedQuery{
-		Cache: factories.NewCache(os.Getenv("REDIS_URL"), 24*time.Hour),
+		Cache: factories.NewApqCache(),
 	})
 
 	r.POST("/graphql", func(context *gin.Context) {

@@ -16,6 +16,16 @@ type CreateGame struct {
 	SystemRequirements string            `json:"systemRequirements"`
 }
 
+type GamePagination struct {
+	Data       []*Game `json:"data"`
+	TotalPages int     `json:"totalPages"`
+}
+
+type PromoPagination struct {
+	Data       []*Promo `json:"data"`
+	TotalPages int      `json:"totalPages"`
+}
+
 type UpdateGame struct {
 	ID                 int64             `json:"id"`
 	Title              string            `json:"title"`
@@ -35,4 +45,9 @@ type UpdateUser struct {
 	CountryID    int64           `json:"countryId"`
 	Avatar       *graphql.Upload `json:"avatar"`
 	ProfileTheme string          `json:"profileTheme"`
+}
+
+type UserPagination struct {
+	Data       []*User `json:"data"`
+	TotalPages int     `json:"totalPages"`
 }

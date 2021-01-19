@@ -15,6 +15,7 @@ func init() {
 			database_seeds.SeedGameTags,
 			database_seeds.SeedPromos,
 			database_seeds.SeedTopUpCodes,
+			database_seeds.SeedGames,
 		} {
 			if err := seed(); err != nil {
 				return err

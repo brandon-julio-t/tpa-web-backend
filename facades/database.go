@@ -13,7 +13,7 @@ import (
 var databaseSingleton *gorm.DB = nil
 
 func init() {
-	if dbUrl, ok := os.LookupEnv("DATABASE_URL"); ok {
+	if dbUrl := os.Getenv("DATABASE_URL"); dbUrl != "" {
 		db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{
 			Logger: logger.New(
 				log.New(os.Stdout, "\r\n", log.LstdFlags),

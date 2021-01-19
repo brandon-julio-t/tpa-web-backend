@@ -67,6 +67,11 @@ type ComplexityRoot struct {
 		Title              func(childComplexity int) int
 	}
 
+	GamePagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
+	}
+
 	GameSlideshow struct {
 		File func(childComplexity int) int
 		Game func(childComplexity int) int
@@ -79,6 +84,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ApproveUnsuspendRequests func(childComplexity int, id int64) int
+		Befriend                 func(childComplexity int, userID int64) int
 		CreateGame               func(childComplexity int, input models.CreateGame) int
 		CreateProfileComment     func(childComplexity int, profileID int64, comment string) int
 		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
@@ -94,6 +100,7 @@ type ComplexityRoot struct {
 		SendOtp                  func(childComplexity int, email string) int
 		SubmitReport             func(childComplexity int, userID int64, description string) int
 		SuspendAccount           func(childComplexity int, id int64) int
+		Unfriend                 func(childComplexity int, userID int64) int
 		UnsuspendRequest         func(childComplexity int, accountName string) int
 		UpdateGame               func(childComplexity int, input models.UpdateGame) int
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
@@ -115,19 +122,25 @@ type ComplexityRoot struct {
 		ID       func(childComplexity int) int
 	}
 
+	PromoPagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
+	}
+
 	Query struct {
 		AllCountries            func(childComplexity int) int
 		Auth                    func(childComplexity int) int
+		Friends                 func(childComplexity int) int
+		Games                   func(childComplexity int, page int) int
 		GetAllGameTags          func(childComplexity int) int
-		GetAllGames             func(childComplexity int, page int) int
 		GetAllUnsuspendRequests func(childComplexity int) int
-		GetAllUsers             func(childComplexity int, page int) int
 		GetGameByID             func(childComplexity int, id int64) int
 		GetProfile              func(childComplexity int, customURL string) int
 		GetReportsByUser        func(childComplexity int, id int64) int
 		ProfileComments         func(childComplexity int, profileID int64) int
 		Promo                   func(childComplexity int, id int64) int
-		Promos                  func(childComplexity int) int
+		Promos                  func(childComplexity int, page int) int
+		Users                   func(childComplexity int, page int) int
 	}
 
 	Report struct {
@@ -153,6 +166,11 @@ type ComplexityRoot struct {
 		SuspendedAt    func(childComplexity int) int
 		WalletBalance  func(childComplexity int) int
 	}
+
+	UserPagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
+	}
 }
 
 type GameResolver interface {
@@ -162,6 +180,8 @@ type MutationResolver interface {
 	Login(ctx context.Context, accountName string, password string) (*models.User, error)
 	Logout(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
+	Befriend(ctx context.Context, userID int64) (*models.User, error)
+	Unfriend(ctx context.Context, userID int64) (*models.User, error)
 	CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error)
 	UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error)
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
@@ -184,16 +204,17 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
-	GetAllGames(ctx context.Context, page int) ([]*models.Game, error)
+	Friends(ctx context.Context) ([]*models.User, error)
+	Games(ctx context.Context, page int) (*models.GamePagination, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
-	Promos(ctx context.Context) ([]*models.Promo, error)
+	Promos(ctx context.Context, page int) (*models.PromoPagination, error)
 	Promo(ctx context.Context, id int64) (*models.Promo, error)
 	GetReportsByUser(ctx context.Context, id int64) ([]*models.Report, error)
 	GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error)
 	GetProfile(ctx context.Context, customURL string) (*models.User, error)
-	GetAllUsers(ctx context.Context, page int) ([]*models.User, error)
+	Users(ctx context.Context, page int) (*models.UserPagination, error)
 }
 
 type executableSchema struct {
@@ -302,6 +323,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Game.Title(childComplexity), true
 
+	case "GamePagination.data":
+		if e.complexity.GamePagination.Data == nil {
+			break
+		}
+
+		return e.complexity.GamePagination.Data(childComplexity), true
+
+	case "GamePagination.totalPages":
+		if e.complexity.GamePagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.GamePagination.TotalPages(childComplexity), true
+
 	case "GameSlideshow.file":
 		if e.complexity.GameSlideshow.File == nil {
 			break
@@ -341,6 +376,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ApproveUnsuspendRequests(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.befriend":
+		if e.complexity.Mutation.Befriend == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_befriend_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Befriend(childComplexity, args["userId"].(int64)), true
 
 	case "Mutation.createGame":
 		if e.complexity.Mutation.CreateGame == nil {
@@ -512,6 +559,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SuspendAccount(childComplexity, args["id"].(int64)), true
 
+	case "Mutation.unfriend":
+		if e.complexity.Mutation.Unfriend == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_unfriend_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Unfriend(childComplexity, args["userId"].(int64)), true
+
 	case "Mutation.unsuspendRequest":
 		if e.complexity.Mutation.UnsuspendRequest == nil {
 			break
@@ -628,6 +687,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Promo.ID(childComplexity), true
 
+	case "PromoPagination.data":
+		if e.complexity.PromoPagination.Data == nil {
+			break
+		}
+
+		return e.complexity.PromoPagination.Data(childComplexity), true
+
+	case "PromoPagination.totalPages":
+		if e.complexity.PromoPagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.PromoPagination.TotalPages(childComplexity), true
+
 	case "Query.allCountries":
 		if e.complexity.Query.AllCountries == nil {
 			break
@@ -642,6 +715,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Auth(childComplexity), true
 
+	case "Query.friends":
+		if e.complexity.Query.Friends == nil {
+			break
+		}
+
+		return e.complexity.Query.Friends(childComplexity), true
+
+	case "Query.games":
+		if e.complexity.Query.Games == nil {
+			break
+		}
+
+		args, err := ec.field_Query_games_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Games(childComplexity, args["page"].(int)), true
+
 	case "Query.getAllGameTags":
 		if e.complexity.Query.GetAllGameTags == nil {
 			break
@@ -649,36 +741,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetAllGameTags(childComplexity), true
 
-	case "Query.getAllGames":
-		if e.complexity.Query.GetAllGames == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getAllGames_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetAllGames(childComplexity, args["page"].(int)), true
-
 	case "Query.getAllUnsuspendRequests":
 		if e.complexity.Query.GetAllUnsuspendRequests == nil {
 			break
 		}
 
 		return e.complexity.Query.GetAllUnsuspendRequests(childComplexity), true
-
-	case "Query.getAllUsers":
-		if e.complexity.Query.GetAllUsers == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getAllUsers_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetAllUsers(childComplexity, args["page"].(int)), true
 
 	case "Query.getGameById":
 		if e.complexity.Query.GetGameByID == nil {
@@ -745,7 +813,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Promos(childComplexity), true
+		args, err := ec.field_Query_promos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Promos(childComplexity, args["page"].(int)), true
+
+	case "Query.users":
+		if e.complexity.Query.Users == nil {
+			break
+		}
+
+		args, err := ec.field_Query_users_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Users(childComplexity, args["page"].(int)), true
 
 	case "Report.createdAt":
 		if e.complexity.Report.CreatedAt == nil {
@@ -873,6 +958,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.WalletBalance(childComplexity), true
 
+	case "UserPagination.data":
+		if e.complexity.UserPagination.Data == nil {
+			break
+		}
+
+		return e.complexity.UserPagination.Data(childComplexity), true
+
+	case "UserPagination.totalPages":
+		if e.complexity.UserPagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.UserPagination.TotalPages(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -961,6 +1060,15 @@ extend type Query {
     allCountries: [Country!]!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/friend.graphqls", Input: `extend type Query {
+    friends: [User!]!
+}
+
+extend type Mutation {
+    befriend(userId: ID!): User!
+    unfriend(userId: ID!): User!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/game.graphqls", Input: `type Game {
     id: ID!
     createdAt: Time!
@@ -978,8 +1086,13 @@ type GameSlideshow {
     file: AssetFile!
 }
 
+type GamePagination {
+    data: [Game!]!
+    totalPages: Int!
+}
+
 extend type Query {
-    getAllGames(page: Int!): [Game!]!
+    games(page: Int!): GamePagination!
     getGameById(id: ID!): Game!
 }
 
@@ -1046,8 +1159,13 @@ extend type Mutation {
     endAt: Time!
 }
 
+type PromoPagination {
+    data: [Promo!]!
+    totalPages: Int!
+}
+
 extend type Query {
-    promos: [Promo!]!
+    promos(page: Int!): PromoPagination!
     promo(id: ID!): Promo!
 }
 
@@ -1085,7 +1203,10 @@ extend type Mutation {
     approveUnsuspendRequests(id: ID!): User!
     denyUnsuspendRequests(id: ID!): User!
 }`, BuiltIn: false},
-	{Name: "graph/schemas/user.graphqls", Input: `type User {
+	{Name: "graph/schemas/user.graphqls", Input: `scalar Upload
+scalar Time
+
+type User {
     id: ID!
     accountName: String!
     country: Country!
@@ -1101,8 +1222,21 @@ extend type Mutation {
     reportCounts: Int!
 }
 
-scalar Upload
-scalar Time
+type UserPagination {
+    data: [User!]!
+    totalPages: Int!
+}
+
+extend type Query {
+    getProfile(customUrl: String!): User!
+    users(page: Int!): UserPagination!
+}
+
+extend type Mutation {
+    register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
+    updateProfile(input: UpdateUser): User!
+    suspendAccount(id: ID!): User!
+}
 
 input UpdateUser {
     displayName: String!
@@ -1112,17 +1246,6 @@ input UpdateUser {
     countryId: ID!
     avatar: Upload
     profileTheme: String!
-}
-
-extend type Query {
-    getProfile(customUrl: String!): User!
-    getAllUsers(page: Int!): [User!]!
-}
-
-extend type Mutation {
-    register(accountName: String!, email: String!, password: String!, countryId: ID!): User!
-    updateProfile(input: UpdateUser): User!
-    suspendAccount(id: ID!): User!
 }
 `, BuiltIn: false},
 }
@@ -1144,6 +1267,21 @@ func (ec *executionContext) field_Mutation_approveUnsuspendRequests_args(ctx con
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_befriend_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -1405,6 +1543,21 @@ func (ec *executionContext) field_Mutation_suspendAccount_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_unfriend_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_unsuspendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1513,22 +1666,7 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_getAllGames_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["page"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["page"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_getAllUsers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_games_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -1615,6 +1753,36 @@ func (ec *executionContext) field_Query_promo_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_promos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
 	return args, nil
 }
 
@@ -2111,6 +2279,76 @@ func (ec *executionContext) _Game_systemRequirements(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _GamePagination_data(ctx context.Context, field graphql.CollectedField, obj *models.GamePagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GamePagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GamePagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.GamePagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GamePagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _GameSlideshow_game(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2361,6 +2599,90 @@ func (ec *executionContext) _Mutation_refreshToken(ctx context.Context, field gr
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_befriend(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_befriend_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Befriend(rctx, args["userId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_unfriend(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_unfriend_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Unfriend(rctx, args["userId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createGame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3399,6 +3721,76 @@ func (ec *executionContext) _Promo_endAt(ctx context.Context, field graphql.Coll
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _PromoPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.PromoPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PromoPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Promo)
+	fc.Result = res
+	return ec.marshalNPromo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PromoPagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.PromoPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PromoPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_auth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3466,7 +3858,42 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getAllGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_friends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Friends(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_games(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3483,7 +3910,7 @@ func (ec *executionContext) _Query_getAllGames(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_getAllGames_args(ctx, rawArgs)
+	args, err := ec.field_Query_games_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -3491,7 +3918,7 @@ func (ec *executionContext) _Query_getAllGames(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetAllGames(rctx, args["page"].(int))
+		return ec.resolvers.Query().Games(rctx, args["page"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3503,9 +3930,9 @@ func (ec *executionContext) _Query_getAllGames(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.Game)
+	res := resTmp.(*models.GamePagination)
 	fc.Result = res
-	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+	return ec.marshalNGamePagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGamePagination(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_getGameById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3643,9 +4070,16 @@ func (ec *executionContext) _Query_promos(ctx context.Context, field graphql.Col
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_promos_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Promos(rctx)
+		return ec.resolvers.Query().Promos(rctx, args["page"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3657,9 +4091,9 @@ func (ec *executionContext) _Query_promos(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.Promo)
+	res := resTmp.(*models.PromoPagination)
 	fc.Result = res
-	return ec.marshalNPromo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoᚄ(ctx, field.Selections, res)
+	return ec.marshalNPromoPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoPagination(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_promo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3823,7 +4257,7 @@ func (ec *executionContext) _Query_getProfile(ctx context.Context, field graphql
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_getAllUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3840,7 +4274,7 @@ func (ec *executionContext) _Query_getAllUsers(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_getAllUsers_args(ctx, rawArgs)
+	args, err := ec.field_Query_users_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -3848,7 +4282,7 @@ func (ec *executionContext) _Query_getAllUsers(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetAllUsers(rctx, args["page"].(int))
+		return ec.resolvers.Query().Users(rctx, args["page"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3860,9 +4294,9 @@ func (ec *executionContext) _Query_getAllUsers(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.User)
+	res := resTmp.(*models.UserPagination)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserPagination(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4546,7 +4980,7 @@ func (ec *executionContext) _User_reportCounts(ctx context.Context, field graphq
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ReportCounts(), nil
+		return obj.ReportCounts(ctx), nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4561,6 +4995,76 @@ func (ec *executionContext) _User_reportCounts(ctx context.Context, field graphq
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.UserPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.UserPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -6010,6 +6514,38 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var gamePaginationImplementors = []string{"GamePagination"}
+
+func (ec *executionContext) _GamePagination(ctx context.Context, sel ast.SelectionSet, obj *models.GamePagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gamePaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GamePagination")
+		case "data":
+			out.Values[i] = ec._GamePagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._GamePagination_totalPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var gameSlideshowImplementors = []string{"GameSlideshow"}
 
 func (ec *executionContext) _GameSlideshow(ctx context.Context, sel ast.SelectionSet, obj *models.GameSlideshow) graphql.Marshaler {
@@ -6101,6 +6637,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "refreshToken":
 			out.Values[i] = ec._Mutation_refreshToken(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "befriend":
+			out.Values[i] = ec._Mutation_befriend(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "unfriend":
+			out.Values[i] = ec._Mutation_unfriend(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6289,6 +6835,38 @@ func (ec *executionContext) _Promo(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var promoPaginationImplementors = []string{"PromoPagination"}
+
+func (ec *executionContext) _PromoPagination(ctx context.Context, sel ast.SelectionSet, obj *models.PromoPagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, promoPaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PromoPagination")
+		case "data":
+			out.Values[i] = ec._PromoPagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._PromoPagination_totalPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var queryImplementors = []string{"Query"}
 
 func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -6329,7 +6907,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "getAllGames":
+		case "friends":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -6337,7 +6915,21 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getAllGames(ctx, field)
+				res = ec._Query_friends(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "games":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_games(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -6455,7 +7047,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "getAllUsers":
+		case "users":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -6463,7 +7055,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getAllUsers(ctx, field)
+				res = ec._Query_users(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -6545,62 +7137,103 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "accountName":
 			out.Values[i] = ec._User_accountName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "country":
 			out.Values[i] = ec._User_country(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "customUrl":
 			out.Values[i] = ec._User_customUrl(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "displayName":
 			out.Values[i] = ec._User_displayName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "profilePicture":
 			out.Values[i] = ec._User_profilePicture(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "profileTheme":
 			out.Values[i] = ec._User_profileTheme(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "realName":
 			out.Values[i] = ec._User_realName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "summary":
 			out.Values[i] = ec._User_summary(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "walletBalance":
 			out.Values[i] = ec._User_walletBalance(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "suspendedAt":
 			out.Values[i] = ec._User_suspendedAt(ctx, field, obj)
 		case "reportCounts":
-			out.Values[i] = ec._User_reportCounts(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_reportCounts(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userPaginationImplementors = []string{"UserPagination"}
+
+func (ec *executionContext) _UserPagination(ctx context.Context, sel ast.SelectionSet, obj *models.UserPagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userPaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserPagination")
+		case "data":
+			out.Values[i] = ec._UserPagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._UserPagination_totalPages(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7001,6 +7634,20 @@ func (ec *executionContext) marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑt�
 	return ec._Game(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNGamePagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGamePagination(ctx context.Context, sel ast.SelectionSet, v models.GamePagination) graphql.Marshaler {
+	return ec._GamePagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGamePagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGamePagination(ctx context.Context, sel ast.SelectionSet, v *models.GamePagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._GamePagination(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNGameSlideshow2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameSlideshowᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.GameSlideshow) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -7272,6 +7919,20 @@ func (ec *executionContext) marshalNPromo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑt�
 	return ec._Promo(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPromoPagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoPagination(ctx context.Context, sel ast.SelectionSet, v models.PromoPagination) graphql.Marshaler {
+	return ec._PromoPagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPromoPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromoPagination(ctx context.Context, sel ast.SelectionSet, v *models.PromoPagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PromoPagination(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNReport2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐReport(ctx context.Context, sel ast.SelectionSet, v models.Report) graphql.Marshaler {
 	return ec._Report(ctx, sel, &v)
 }
@@ -7473,6 +8134,20 @@ func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑt�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserPagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserPagination(ctx context.Context, sel ast.SelectionSet, v models.UserPagination) graphql.Marshaler {
+	return ec._UserPagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserPagination(ctx context.Context, sel ast.SelectionSet, v *models.UserPagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UserPagination(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

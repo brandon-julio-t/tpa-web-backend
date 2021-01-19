@@ -1,0 +1,8 @@
+extend type Query {
+    friends: [User!]!
+}
+
+extend type Mutation {
+    befriend(userId: ID!): User!
+    unfriend(userId: ID!): User!
+}

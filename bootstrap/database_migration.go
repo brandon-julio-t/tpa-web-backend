@@ -7,7 +7,10 @@ import (
 )
 
 func init() {
-	if err := facades.UseDB().Exec("drop table game_tag_mappings").Error; err != nil {
+	if err := facades.UseDB().
+		Exec("drop table if exists game_tag_mappings").
+		Exec("drop table if exists friends").
+		Error; err != nil {
 		log.Fatal(err)
 	}
 
