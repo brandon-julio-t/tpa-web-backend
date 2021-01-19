@@ -23,6 +23,7 @@ func init() {
 		&models.GameTag{},
 		&models.Promo{},
 		&models.TopUpCode{},
+		&models.ProfileComment{},
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -39,6 +40,7 @@ func init() {
 		&models.GameTag{},
 		&models.Promo{},
 		&models.TopUpCode{},
+		&models.ProfileComment{},
 	); err != nil {
 		log.Fatal(err)
 	}

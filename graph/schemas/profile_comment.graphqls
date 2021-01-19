@@ -1,0 +1,16 @@
+type ProfileComment {
+    id: ID!
+    user: User!
+    profile: User!
+    comment: String!
+    createdAt: Time!
+}
+
+extend type Query {
+    profileComments(profileId: ID!): [ProfileComment!]!
+}
+
+extend type Mutation {
+    createProfileComment(profileId: ID!, comment: String!): ProfileComment!
+    deleteProfileComment(id: ID!): ProfileComment!
+}

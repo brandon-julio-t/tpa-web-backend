@@ -80,8 +80,10 @@ type ComplexityRoot struct {
 	Mutation struct {
 		ApproveUnsuspendRequests func(childComplexity int, id int64) int
 		CreateGame               func(childComplexity int, input models.CreateGame) int
+		CreateProfileComment     func(childComplexity int, profileID int64, comment string) int
 		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
 		DeleteGame               func(childComplexity int, id int64) int
+		DeleteProfileComment     func(childComplexity int, id int64) int
 		DeletePromo              func(childComplexity int, id int64) int
 		DenyUnsuspendRequests    func(childComplexity int, id int64) int
 		Login                    func(childComplexity int, accountName string, password string) int
@@ -97,6 +99,14 @@ type ComplexityRoot struct {
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
 		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
 		VerifyOtp                func(childComplexity int, otp string) int
+	}
+
+	ProfileComment struct {
+		Comment   func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Profile   func(childComplexity int) int
+		User      func(childComplexity int) int
 	}
 
 	Promo struct {
@@ -115,6 +125,7 @@ type ComplexityRoot struct {
 		GetGameByID             func(childComplexity int, id int64) int
 		GetProfile              func(childComplexity int, customURL string) int
 		GetReportsByUser        func(childComplexity int, id int64) int
+		ProfileComments         func(childComplexity int, profileID int64) int
 		Promo                   func(childComplexity int, id int64) int
 		Promos                  func(childComplexity int) int
 	}
@@ -156,6 +167,8 @@ type MutationResolver interface {
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
+	CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error)
+	DeleteProfileComment(ctx context.Context, id int64) (*models.ProfileComment, error)
 	CreatePromo(ctx context.Context, discount float64, endAt time.Time) (*models.Promo, error)
 	UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error)
 	DeletePromo(ctx context.Context, id int64) (*models.Promo, error)
@@ -174,6 +187,7 @@ type QueryResolver interface {
 	GetAllGames(ctx context.Context, page int) ([]*models.Game, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
+	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
 	Promos(ctx context.Context) ([]*models.Promo, error)
 	Promo(ctx context.Context, id int64) (*models.Promo, error)
 	GetReportsByUser(ctx context.Context, id int64) ([]*models.Report, error)
@@ -340,6 +354,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateGame(childComplexity, args["input"].(models.CreateGame)), true
 
+	case "Mutation.createProfileComment":
+		if e.complexity.Mutation.CreateProfileComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createProfileComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateProfileComment(childComplexity, args["profileId"].(int64), args["comment"].(string)), true
+
 	case "Mutation.createPromo":
 		if e.complexity.Mutation.CreatePromo == nil {
 			break
@@ -363,6 +389,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGame(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.deleteProfileComment":
+		if e.complexity.Mutation.DeleteProfileComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteProfileComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteProfileComment(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.deletePromo":
 		if e.complexity.Mutation.DeletePromo == nil {
@@ -534,6 +572,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.VerifyOtp(childComplexity, args["otp"].(string)), true
 
+	case "ProfileComment.comment":
+		if e.complexity.ProfileComment.Comment == nil {
+			break
+		}
+
+		return e.complexity.ProfileComment.Comment(childComplexity), true
+
+	case "ProfileComment.createdAt":
+		if e.complexity.ProfileComment.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.ProfileComment.CreatedAt(childComplexity), true
+
+	case "ProfileComment.id":
+		if e.complexity.ProfileComment.ID == nil {
+			break
+		}
+
+		return e.complexity.ProfileComment.ID(childComplexity), true
+
+	case "ProfileComment.profile":
+		if e.complexity.ProfileComment.Profile == nil {
+			break
+		}
+
+		return e.complexity.ProfileComment.Profile(childComplexity), true
+
+	case "ProfileComment.user":
+		if e.complexity.ProfileComment.User == nil {
+			break
+		}
+
+		return e.complexity.ProfileComment.User(childComplexity), true
+
 	case "Promo.discount":
 		if e.complexity.Promo.Discount == nil {
 			break
@@ -642,6 +715,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetReportsByUser(childComplexity, args["id"].(int64)), true
+
+	case "Query.profileComments":
+		if e.complexity.Query.ProfileComments == nil {
+			break
+		}
+
+		args, err := ec.field_Query_profileComments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ProfileComments(childComplexity, args["profileId"].(int64)), true
 
 	case "Query.promo":
 		if e.complexity.Query.Promo == nil {
@@ -938,6 +1023,23 @@ extend type Query {
     verifyOTP(otp: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/profile_comment.graphqls", Input: `type ProfileComment {
+    id: ID!
+    user: User!
+    profile: User!
+    comment: String!
+    createdAt: Time!
+}
+
+extend type Query {
+    profileComments(profileId: ID!): [ProfileComment!]!
+}
+
+extend type Mutation {
+    createProfileComment(profileId: ID!, comment: String!): ProfileComment!
+    deleteProfileComment(id: ID!): ProfileComment!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/promo.graphqls", Input: `type Promo {
     id: ID!
     discount: Float!
@@ -1060,6 +1162,30 @@ func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createProfileComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["profileId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("profileId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["profileId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["comment"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("comment"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["comment"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createPromo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1085,6 +1211,21 @@ func (ec *executionContext) field_Mutation_createPromo_args(ctx context.Context,
 }
 
 func (ec *executionContext) field_Mutation_deleteGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteProfileComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -1444,6 +1585,21 @@ func (ec *executionContext) field_Query_getReportsByUser_args(ctx context.Contex
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_profileComments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["profileId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("profileId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["profileId"] = arg0
 	return args, nil
 }
 
@@ -2417,6 +2573,90 @@ func (ec *executionContext) _Mutation_verifyOTP(ctx context.Context, field graph
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createProfileComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createProfileComment_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateProfileComment(rctx, args["profileId"].(int64), args["comment"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProfileComment)
+	fc.Result = res
+	return ec.marshalNProfileComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteProfileComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteProfileComment_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteProfileComment(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.ProfileComment)
+	fc.Result = res
+	return ec.marshalNProfileComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createPromo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2879,6 +3119,181 @@ func (ec *executionContext) _Mutation_suspendAccount(ctx context.Context, field 
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ProfileComment_id(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileComment_user(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileComment_profile(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Profile, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileComment_comment(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comment, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileComment_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Promo_id(ctx context.Context, field graphql.CollectedField, obj *models.Promo) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3168,6 +3583,48 @@ func (ec *executionContext) _Query_getAllGameTags(ctx context.Context, field gra
 	res := resTmp.([]*models.GameTag)
 	fc.Result = res
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_profileComments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_profileComments_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().ProfileComments(rctx, args["profileId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.ProfileComment)
+	fc.Result = res
+	return ec.marshalNProfileComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileCommentᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_promos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5672,6 +6129,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createProfileComment":
+			out.Values[i] = ec._Mutation_createProfileComment(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteProfileComment":
+			out.Values[i] = ec._Mutation_deleteProfileComment(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createPromo":
 			out.Values[i] = ec._Mutation_createPromo(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5724,6 +6191,53 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "suspendAccount":
 			out.Values[i] = ec._Mutation_suspendAccount(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var profileCommentImplementors = []string{"ProfileComment"}
+
+func (ec *executionContext) _ProfileComment(ctx context.Context, sel ast.SelectionSet, obj *models.ProfileComment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileCommentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileComment")
+		case "id":
+			out.Values[i] = ec._ProfileComment_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._ProfileComment_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "profile":
+			out.Values[i] = ec._ProfileComment_profile(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "comment":
+			out.Values[i] = ec._ProfileComment_comment(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._ProfileComment_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5852,6 +6366,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getAllGameTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "profileComments":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_profileComments(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -6640,6 +7168,57 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNProfileComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx context.Context, sel ast.SelectionSet, v models.ProfileComment) graphql.Marshaler {
+	return ec._ProfileComment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNProfileComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.ProfileComment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNProfileComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNProfileComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx context.Context, sel ast.SelectionSet, v *models.ProfileComment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ProfileComment(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPromo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPromo(ctx context.Context, sel ast.SelectionSet, v models.Promo) graphql.Marshaler {
