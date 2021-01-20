@@ -38,7 +38,7 @@ func SeedUsers() error {
 		return err
 	}
 
-	for _, user := range []*models.User{
+	users := []*models.User{
 		{
 			AccountName: "User",
 			Email:       "user@user.com",
@@ -138,8 +138,27 @@ func SeedUsers() error {
 				ContentType: "image/png",
 			},
 		},
-	} {
+	}
+
+	for _, user := range users {
 		facades.UseDB().Clauses(clause.OnConflict{DoNothing: true}).Create(user)
+	}
+
+	for _, user := range users {
+		for _, friend := range users {
+			if user.ID == friend.ID {
+				continue
+			}
+
+			if err := facades.UseDB().Create(&models.Friendship{
+				UserID:   user.ID,
+				User:     *user,
+				FriendID: friend.ID,
+				Friend:   *friend,
+			}).Error; err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

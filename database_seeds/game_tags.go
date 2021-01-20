@@ -339,7 +339,7 @@ func SeedGameTags() error {
 		{Name: "Naval Combat"},
 		{Name: "Football"},
 		{Name: "Epic"},
-		{Name: "Quick-Time Events"},
+		{Name: "Quick-Time PrivateChatSockets"},
 		{Name: "Mod"},
 		{Name: "Asynchronous Multiplayer"},
 		{Name: "TrackIR"},

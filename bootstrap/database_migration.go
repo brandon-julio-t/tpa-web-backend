@@ -27,6 +27,8 @@ func init() {
 		&models.Promo{},
 		&models.TopUpCode{},
 		&models.ProfileComment{},
+		&models.PrivateMessage{},
+		&models.Friendship{},
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -44,6 +46,8 @@ func init() {
 		&models.Promo{},
 		&models.TopUpCode{},
 		&models.ProfileComment{},
+		&models.PrivateMessage{},
+		&models.Friendship{},
 	); err != nil {
 		log.Fatal(err)
 	}

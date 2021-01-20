@@ -29,8 +29,8 @@ func (r *mutationResolver) CreateProfileComment(ctx context.Context, profileID i
 	}
 
 	return &profileComment, facades.UseDB().
-		Preload("User").
-		Preload("User.ProfilePicture").
+		Preload("Sender").
+		Preload("Sender.ProfilePicture").
 		First(&profileComment).
 		Error
 }
@@ -43,8 +43,8 @@ func (r *mutationResolver) DeleteProfileComment(ctx context.Context, id int64) (
 func (r *queryResolver) ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error) {
 	var profileComments []*models.ProfileComment
 	return profileComments, facades.UseDB().
-		Preload("User").
-		Preload("User.ProfilePicture").
+		Preload("Sender").
+		Preload("Sender.ProfilePicture").
 		Where("profile_id = ?", profileID).
 		Order("created_at desc").
 		Find(&profileComments).

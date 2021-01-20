@@ -61,7 +61,7 @@ func (r *mutationResolver) DenyUnsuspendRequests(ctx context.Context, id int64) 
 
 func (r *queryResolver) GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error) {
 	var unsuspendRequests []*models.UnsuspendRequest
-	if err := facades.UseDB().Preload("User").Find(&unsuspendRequests).Error; err != nil {
+	if err := facades.UseDB().Preload("Sender").Find(&unsuspendRequests).Error; err != nil {
 		return nil, err
 	}
 

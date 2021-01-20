@@ -22,7 +22,7 @@ type User struct {
 	CustomURL        string `gorm:"uniqueIndex"`
 	DisplayName      string
 	Email            string  `gorm:"uniqueIndex"`
-	Friends          []*User `gorm:"many2many:friends;"`
+	Friends          []*Friendship
 	Password         string
 	ProfilePictureID int64
 	ProfilePicture   AssetFile
@@ -63,6 +63,8 @@ func (u *User) ReportCounts(ctx context.Context) int64 {
 	if err := facades.UseDB().Model(&Report{}).Where("reported_id = ?", u.ID).Count(&count).Error; err != nil {
 		return -1
 	}
-	facades.UseCache().Set(ctx, cacheKey, count, 10*time.Second)
+	if err := facades.UseCache().Set(ctx, cacheKey, count, 10*time.Second).Err(); err != nil {
+		log.Fatal(err)
+	}
 	return count
 }

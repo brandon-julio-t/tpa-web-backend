@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/brandon-julio-t/tpa-web-backend/bootstrap"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
@@ -14,6 +15,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"strconv"
@@ -58,15 +60,26 @@ func main() {
 		context.DataFromReader(http.StatusOK, int64(reader.Len()), file.ContentType, reader, map[string]string{})
 	})
 
-	gql := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{
-		Resolvers: &resolvers.Resolver{},
+	gql := handler.New(generated.NewExecutableSchema(generated.Config{
+		Resolvers: resolvers.NewResolver(),
 	}))
 
 	gql.Use(extension.AutomaticPersistedQuery{
 		Cache: factories.NewApqCache(),
 	})
 
-	r.POST("/graphql", func(context *gin.Context) {
+	gql.AddTransport(transport.POST{})
+	gql.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 10 * time.Second,
+		Upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+	})
+	gql.Use(extension.Introspection{})
+
+	r.Any("/graphql", func(context *gin.Context) {
 		gql.ServeHTTP(context.Writer, context.Request)
 	})
 

@@ -1,0 +1,18 @@
+type PrivateMessage {
+    id: ID!
+    text: String!
+    sender: User!
+    createdAt: Time!
+}
+
+extend type Query {
+    privateMessage(friendId: ID!): [PrivateMessage!]!
+}
+
+extend type Mutation {
+    addPrivateMessage(friendId: ID!, text: String!): PrivateMessage!
+}
+
+type Subscription {
+    privateMessageAdded: PrivateMessage!
+}

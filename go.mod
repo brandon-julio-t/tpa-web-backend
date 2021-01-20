@@ -14,6 +14,7 @@ require (
 	github.com/go-redis/redis/v8 v8.4.9
 	github.com/gofrs/uuid v3.2.0+incompatible
 	github.com/google/uuid v1.1.4
+	github.com/gorilla/websocket v1.4.2
 	github.com/joho/godotenv v1.3.0
 	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394
 	github.com/vektah/gqlparser/v2 v2.1.0

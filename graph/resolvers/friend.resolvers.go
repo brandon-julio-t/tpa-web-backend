@@ -23,7 +23,20 @@ func (r *mutationResolver) Befriend(ctx context.Context, userID int64) (*models.
 		return nil, err
 	}
 
-	return &friend, facades.UseDB().Model(&user).Association("Friends").Append(&friend)
+	return &friend, facades.UseDB().Create([]*models.Friendship{
+		{
+			UserID:   user.ID,
+			User:     *user,
+			FriendID: friend.ID,
+			Friend:   friend,
+		},
+		{
+			UserID:   friend.ID,
+			User:     friend,
+			FriendID: user.ID,
+			Friend:   *user,
+		},
+	}).Error
 }
 
 func (r *mutationResolver) Unfriend(ctx context.Context, userID int64) (*models.User, error) {
@@ -37,7 +50,10 @@ func (r *mutationResolver) Unfriend(ctx context.Context, userID int64) (*models.
 		return nil, err
 	}
 
-	return &friend, facades.UseDB().Model(&user).Association("Friends").Delete(&friend)
+	return &friend, facades.UseDB().
+		Where("user_id = ? or friend_id = ?", friend.ID, friend.ID).
+		Delete(&models.Friendship{}).
+		Error
 }
 
 func (r *queryResolver) Friends(ctx context.Context) ([]*models.User, error) {
@@ -46,6 +62,22 @@ func (r *queryResolver) Friends(ctx context.Context) ([]*models.User, error) {
 		return nil, errors.New("not authenticated")
 	}
 
+	var friendships []*models.Friendship
+	if err := facades.UseDB().
+		Preload("User").
+		Preload("User.ProfilePicture").
+		Preload("Friend").
+		Preload("Friend.ProfilePicture").
+		Find(&friendships, "user_id = ?", user.ID).
+		Error; err != nil {
+		return nil, err
+	}
+
 	var friends []*models.User
-	return friends, facades.UseDB().Model(&user).Association("Friends").Find(&friends)
+
+	for _, friendship := range friendships {
+		friends = append(friends, &friendship.Friend)
+	}
+
+	return friends, nil
 }

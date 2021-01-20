@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -39,6 +40,7 @@ type ResolverRoot interface {
 	Game() GameResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	Subscription() SubscriptionResolver
 }
 
 type DirectiveRoot struct {
@@ -83,6 +85,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AddPrivateMessage        func(childComplexity int, friendID int64, text string) int
 		ApproveUnsuspendRequests func(childComplexity int, id int64) int
 		Befriend                 func(childComplexity int, userID int64) int
 		CreateGame               func(childComplexity int, input models.CreateGame) int
@@ -106,6 +109,13 @@ type ComplexityRoot struct {
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
 		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
 		VerifyOtp                func(childComplexity int, otp string) int
+	}
+
+	PrivateMessage struct {
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Sender    func(childComplexity int) int
+		Text      func(childComplexity int) int
 	}
 
 	ProfileComment struct {
@@ -137,6 +147,7 @@ type ComplexityRoot struct {
 		GetGameByID             func(childComplexity int, id int64) int
 		GetProfile              func(childComplexity int, customURL string) int
 		GetReportsByUser        func(childComplexity int, id int64) int
+		PrivateMessage          func(childComplexity int, friendID int64) int
 		ProfileComments         func(childComplexity int, profileID int64) int
 		Promo                   func(childComplexity int, id int64) int
 		Promos                  func(childComplexity int, page int) int
@@ -149,6 +160,10 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Reported    func(childComplexity int) int
 		Reporter    func(childComplexity int) int
+	}
+
+	Subscription struct {
+		PrivateMessageAdded func(childComplexity int) int
 	}
 
 	User struct {
@@ -187,6 +202,7 @@ type MutationResolver interface {
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
+	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
 	CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error)
 	DeleteProfileComment(ctx context.Context, id int64) (*models.ProfileComment, error)
 	CreatePromo(ctx context.Context, discount float64, endAt time.Time) (*models.Promo, error)
@@ -208,6 +224,7 @@ type QueryResolver interface {
 	Games(ctx context.Context, page int) (*models.GamePagination, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
+	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
 	Promos(ctx context.Context, page int) (*models.PromoPagination, error)
 	Promo(ctx context.Context, id int64) (*models.Promo, error)
@@ -215,6 +232,9 @@ type QueryResolver interface {
 	GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error)
 	GetProfile(ctx context.Context, customURL string) (*models.User, error)
 	Users(ctx context.Context, page int) (*models.UserPagination, error)
+}
+type SubscriptionResolver interface {
+	PrivateMessageAdded(ctx context.Context) (<-chan *models.PrivateMessage, error)
 }
 
 type executableSchema struct {
@@ -364,6 +384,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GameTag.Name(childComplexity), true
+
+	case "Mutation.addPrivateMessage":
+		if e.complexity.Mutation.AddPrivateMessage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addPrivateMessage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddPrivateMessage(childComplexity, args["friendId"].(int64), args["text"].(string)), true
 
 	case "Mutation.approveUnsuspendRequests":
 		if e.complexity.Mutation.ApproveUnsuspendRequests == nil {
@@ -631,6 +663,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.VerifyOtp(childComplexity, args["otp"].(string)), true
 
+	case "PrivateMessage.createdAt":
+		if e.complexity.PrivateMessage.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.PrivateMessage.CreatedAt(childComplexity), true
+
+	case "PrivateMessage.id":
+		if e.complexity.PrivateMessage.ID == nil {
+			break
+		}
+
+		return e.complexity.PrivateMessage.ID(childComplexity), true
+
+	case "PrivateMessage.sender":
+		if e.complexity.PrivateMessage.Sender == nil {
+			break
+		}
+
+		return e.complexity.PrivateMessage.Sender(childComplexity), true
+
+	case "PrivateMessage.text":
+		if e.complexity.PrivateMessage.Text == nil {
+			break
+		}
+
+		return e.complexity.PrivateMessage.Text(childComplexity), true
+
 	case "ProfileComment.comment":
 		if e.complexity.ProfileComment.Comment == nil {
 			break
@@ -784,6 +844,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetReportsByUser(childComplexity, args["id"].(int64)), true
 
+	case "Query.privateMessage":
+		if e.complexity.Query.PrivateMessage == nil {
+			break
+		}
+
+		args, err := ec.field_Query_privateMessage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PrivateMessage(childComplexity, args["friendId"].(int64)), true
+
 	case "Query.profileComments":
 		if e.complexity.Query.ProfileComments == nil {
 			break
@@ -866,6 +938,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Report.Reporter(childComplexity), true
+
+	case "Subscription.privateMessageAdded":
+		if e.complexity.Subscription.PrivateMessageAdded == nil {
+			break
+		}
+
+		return e.complexity.Subscription.PrivateMessageAdded(childComplexity), true
 
 	case "User.accountName":
 		if e.complexity.User.AccountName == nil {
@@ -1010,6 +1089,23 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Subscription:
+		next := ec._Subscription(ctx, rc.Operation.SelectionSet)
+
+		var buf bytes.Buffer
+		return func(ctx context.Context) *graphql.Response {
+			buf.Reset()
+			data := next()
+
+			if data == nil {
+				return nil
+			}
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -1136,6 +1232,25 @@ extend type Query {
     verifyOTP(otp: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/private_message.graphqls", Input: `type PrivateMessage {
+    id: ID!
+    text: String!
+    sender: User!
+    createdAt: Time!
+}
+
+extend type Query {
+    privateMessage(friendId: ID!): [PrivateMessage!]!
+}
+
+extend type Mutation {
+    addPrivateMessage(friendId: ID!, text: String!): PrivateMessage!
+}
+
+type Subscription {
+    privateMessageAdded: PrivateMessage!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/profile_comment.graphqls", Input: `type ProfileComment {
     id: ID!
     user: User!
@@ -1254,6 +1369,30 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_addPrivateMessage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["friendId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("friendId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["friendId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["text"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["text"] = arg1
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_approveUnsuspendRequests_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1723,6 +1862,21 @@ func (ec *executionContext) field_Query_getReportsByUser_args(ctx context.Contex
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_privateMessage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["friendId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("friendId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["friendId"] = arg0
 	return args, nil
 }
 
@@ -2895,6 +3049,48 @@ func (ec *executionContext) _Mutation_verifyOTP(ctx context.Context, field graph
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_addPrivateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_addPrivateMessage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddPrivateMessage(rctx, args["friendId"].(int64), args["text"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PrivateMessage)
+	fc.Result = res
+	return ec.marshalNPrivateMessage2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createProfileComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3439,6 +3635,146 @@ func (ec *executionContext) _Mutation_suspendAccount(ctx context.Context, field 
 	res := resTmp.(*models.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PrivateMessage_id(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PrivateMessage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PrivateMessage_text(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PrivateMessage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Text, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PrivateMessage_sender(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PrivateMessage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Sender, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PrivateMessage_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PrivateMessage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _ProfileComment_id(ctx context.Context, field graphql.CollectedField, obj *models.ProfileComment) (ret graphql.Marshaler) {
@@ -4012,6 +4348,48 @@ func (ec *executionContext) _Query_getAllGameTags(ctx context.Context, field gra
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_privateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_privateMessage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PrivateMessage(rctx, args["friendId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PrivateMessage)
+	fc.Result = res
+	return ec.marshalNPrivateMessage2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessageᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_profileComments(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4543,6 +4921,51 @@ func (ec *executionContext) _Report_createdAt(ctx context.Context, field graphql
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Subscription_privateMessageAdded(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().PrivateMessageAdded(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan *models.PrivateMessage)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNPrivateMessage2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -6675,6 +7098,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "addPrivateMessage":
+			out.Values[i] = ec._Mutation_addPrivateMessage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createProfileComment":
 			out.Values[i] = ec._Mutation_createProfileComment(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -6737,6 +7165,48 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "suspendAccount":
 			out.Values[i] = ec._Mutation_suspendAccount(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var privateMessageImplementors = []string{"PrivateMessage"}
+
+func (ec *executionContext) _PrivateMessage(ctx context.Context, sel ast.SelectionSet, obj *models.PrivateMessage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, privateMessageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PrivateMessage")
+		case "id":
+			out.Values[i] = ec._PrivateMessage_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "text":
+			out.Values[i] = ec._PrivateMessage_text(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "sender":
+			out.Values[i] = ec._PrivateMessage_sender(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._PrivateMessage_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6963,6 +7433,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "privateMessage":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_privateMessage(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "profileComments":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -7121,6 +7605,26 @@ func (ec *executionContext) _Report(ctx context.Context, sel ast.SelectionSet, o
 		return graphql.Null
 	}
 	return out
+}
+
+var subscriptionImplementors = []string{"Subscription"}
+
+func (ec *executionContext) _Subscription(ctx context.Context, sel ast.SelectionSet) func() graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, subscriptionImplementors)
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Subscription",
+	})
+	if len(fields) != 1 {
+		ec.Errorf(ctx, "must subscribe to exactly one stream")
+		return nil
+	}
+
+	switch fields[0].Name {
+	case "privateMessageAdded":
+		return ec._Subscription_privateMessageAdded(ctx, fields[0])
+	default:
+		panic("unknown field " + strconv.Quote(fields[0].Name))
+	}
 }
 
 var userImplementors = []string{"User"}
@@ -7815,6 +8319,57 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNPrivateMessage2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx context.Context, sel ast.SelectionSet, v models.PrivateMessage) graphql.Marshaler {
+	return ec._PrivateMessage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPrivateMessage2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessageᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.PrivateMessage) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPrivateMessage2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNPrivateMessage2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx context.Context, sel ast.SelectionSet, v *models.PrivateMessage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PrivateMessage(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNProfileComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐProfileComment(ctx context.Context, sel ast.SelectionSet, v models.ProfileComment) graphql.Marshaler {
