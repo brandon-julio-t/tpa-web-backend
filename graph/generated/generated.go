@@ -161,7 +161,6 @@ type ComplexityRoot struct {
 		AllCountries                func(childComplexity int) int
 		Auth                        func(childComplexity int) int
 		FeaturedAndRecommendedGames func(childComplexity int) int
-		Friends                     func(childComplexity int) int
 		Games                       func(childComplexity int, page int64) int
 		Genres                      func(childComplexity int) int
 		GetAllGameTags              func(childComplexity int) int
@@ -197,6 +196,7 @@ type ComplexityRoot struct {
 		CustomURL      func(childComplexity int) int
 		DisplayName    func(childComplexity int) int
 		Email          func(childComplexity int) int
+		Friends        func(childComplexity int) int
 		ID             func(childComplexity int) int
 		ProfilePicture func(childComplexity int) int
 		ProfileTheme   func(childComplexity int) int
@@ -264,7 +264,6 @@ type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
-	Friends(ctx context.Context) ([]*models.User, error)
 	Games(ctx context.Context, page int64) (*models.GamePagination, error)
 	Genres(ctx context.Context) ([]*models.GameGenre, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
@@ -287,6 +286,7 @@ type UserResolver interface {
 	WishlistCount(ctx context.Context, obj *models.User) (int64, error)
 	Cart(ctx context.Context, obj *models.User) ([]*models.Game, error)
 	CartCount(ctx context.Context, obj *models.User) (int64, error)
+	Friends(ctx context.Context, obj *models.User) ([]*models.User, error)
 }
 
 type executableSchema struct {
@@ -969,13 +969,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.FeaturedAndRecommendedGames(childComplexity), true
 
-	case "Query.friends":
-		if e.complexity.Query.Friends == nil {
-			break
-		}
-
-		return e.complexity.Query.Friends(childComplexity), true
-
 	case "Query.games":
 		if e.complexity.Query.Games == nil {
 			break
@@ -1203,6 +1196,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Email(childComplexity), true
 
+	case "User.friends":
+		if e.complexity.User.Friends == nil {
+			break
+		}
+
+		return e.complexity.User.Friends(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -1413,7 +1413,7 @@ extend type Query {
     allCountries: [Country!]!
 }
 `, BuiltIn: false},
-	{Name: "graph/schemas/friend.graphqls", Input: `extend type Query {
+	{Name: "graph/schemas/friend.graphqls", Input: `extend type User {
     friends: [User!]!
 }
 
@@ -5168,41 +5168,6 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_friends(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Friends(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*models.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query_games(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6602,6 +6567,41 @@ func (ec *executionContext) _User_cartCount(ctx context.Context, field graphql.C
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_friends(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Friends(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.UserPagination) (ret graphql.Marshaler) {
@@ -8792,20 +8792,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "friends":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_friends(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "games":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -9203,6 +9189,20 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_cartCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "friends":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_friends(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

@@ -56,7 +56,7 @@ func (r *mutationResolver) Unfriend(ctx context.Context, userID int64) (*models.
 		Error
 }
 
-func (r *queryResolver) Friends(ctx context.Context) ([]*models.User, error) {
+func (r *userResolver) Friends(ctx context.Context, obj *models.User) ([]*models.User, error) {
 	user, err := middlewares.UseAuth(ctx)
 	if err != nil {
 		return nil, err
