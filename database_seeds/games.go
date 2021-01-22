@@ -1,149 +1,99 @@
 package database_seeds
 
 import (
+	"fmt"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"gorm.io/gorm"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"syreclabs.com/go/faker"
+	"time"
 )
 
 func SeedGames() error {
-	path := filepath.Join("assets", "Background Zoom SLC.png")
-	backgroundSLC, err := ioutil.ReadFile(path)
+	imagePath := filepath.Join("assets", "Background Zoom SLC.png")
+	backgroundSLC, err := ioutil.ReadFile(imagePath)
 	if err != nil {
 		return err
 	}
 
-	return facades.UseDB().Create(&[]*models.Game{
-		{
-			Title:       "The Butcher 3",
-			Description: "An old man living with his sword hunting monsters",
-			Price:       499,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Grand Theft Manual",
-			Description: "Player and the world",
-			Price:       499,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Call of Sleeping",
-			Description: "The most popular FPS game",
-			Price:       299,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Counter Stroke: Local Offensive",
-			Description: "An old man living with his sword hunting monsters",
-			Price:       99,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Sleeping Field",
-			Description: "Another most popular FPS game",
-			Price:       399,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Sleeping Cats",
-			Description: "A man fighting thugs in China",
-			Price:       399,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Gacha Impact",
-			Description: "Fantasy anime game",
-			Price:       199,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Cybercafe 2069",
-			Description: "What makes someone a criminal in 2069?",
-			Price:       499,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "The Last of Them",
-			Description: "The civilization in post apocalypse world settings",
-			Price:       499,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-		{
-			Title:       "Potato Gear Rising",
-			Description: "Rules of potato",
-			Price:       499,
-			Banner:      models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-			Slideshows: []*models.GameSlideshow{
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-				{File: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
-			},
-			GameTags:           []*models.GameTag{{ID: 1}, {ID: 2}, {ID: 3}},
-			SystemRequirements: "Potato PC",
-		},
-	}).Error
+	videoPath := filepath.Join("assets", "file_example_MP4_480_1_5MG.mp4")
+	sampleVideo, err := ioutil.ReadFile(videoPath)
+	if err != nil {
+		return err
+	}
+
+	return facades.UseDB().Transaction(func(tx *gorm.DB) error {
+		for i := 0; i < 30; i++ {
+			hoursPlayed, err := strconv.ParseFloat(faker.Number().Decimal(5, 2), 64)
+			if err != nil {
+				return err
+			}
+
+			var tags []*models.GameTag
+			counts := faker.Number().NumberInt(1)
+			for i := 0; i < counts; i++ {
+				id, err := strconv.ParseInt(faker.Number().Between(1, 424), 10, 64)
+				if err != nil {
+					return err
+				}
+				tags = append(tags, &models.GameTag{ID: id})
+			}
+
+			genreId, err := strconv.ParseInt(faker.Number().Between(1, 12), 10, 64)
+			if err != nil {
+				return err
+			}
+
+			discount, err := strconv.ParseFloat(faker.Number().Decimal(3, 2), 64)
+			if err != nil {
+				return err
+			}
+
+			if err := tx.Create(&models.Game{
+				Banner:          models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
+				CreatedAt:       time.Time{},
+				Description:     strings.Join(faker.Lorem().Paragraphs(faker.Number().NumberInt(1)), "\n\n"),
+				Discount:        discount,
+				GameTags:        tags,
+				GenreID:         genreId,
+				HoursPlayed:     hoursPlayed,
+				IsInappropriate: faker.Number().NumberInt(1)%2 == 0,
+				Price:           float64(faker.Commerce().Price()),
+				GameSlideshows: []*models.GameSlideshow{
+					{GameSlideshowFile: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
+					{GameSlideshowFile: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
+					{GameSlideshowFile: models.AssetFile{File: sampleVideo, ContentType: "video/mp4"}},
+				},
+				SystemRequirements: `
+MINIMUM:
+Requires a 64-bit processor and operating system
+OS: Windows 7 or 10
+Processor: Intel Core i5-3570K or AMD FX-8310
+Memory: 8 GB RAM Graphics: NVIDIA GeForce GTX 780 or AMD Radeon RX 470
+DirectX: Version 12
+Storage: 70 GB available space
+Additional Notes: In this game you will encounter a variety of visual effects that may provide seizures or loss of consciousness in a minority of people. If you or someone you know experiences any of the above symptoms while playing, stop and seek medical attention immediately.
+
+RECOMMENDED:
+Requires a 64-bit processor and operating system
+OS: Windows 10
+Processor: Intel Core i7-4790 or AMD Ryzen 3 3200G
+Memory: 12 GB RAM
+Graphics: GTX 1060 6GB / GTX 1660 Super or Radeon RX 590
+DirectX: Version 12
+Storage: 70 GB available space
+Additional Notes: SSD recommended
+`,
+				Title: fmt.Sprintf("%v %v", faker.App().Name(), faker.Name().LastName()),
+			}).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }

@@ -12,6 +12,7 @@ func init() {
 		for _, seed := range []func() error{
 			database_seeds.SeedCountries,
 			database_seeds.SeedUsers,
+			database_seeds.SeedGameGenres,
 			database_seeds.SeedGameTags,
 			database_seeds.SeedPromos,
 			database_seeds.SeedTopUpCodes,

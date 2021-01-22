@@ -1,9 +1,9 @@
 type Query {
     auth: User
+    refreshToken: Boolean!
 }
 
 type Mutation {
     login(accountName: String!, password: String!): User!
     logout: User!
-    refreshToken: Boolean!
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
+	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
 	"github.com/brandon-julio-t/tpa-web-backend/repositories"
@@ -37,9 +38,9 @@ func (r *mutationResolver) Register(ctx context.Context, accountName string, ema
 }
 
 func (r *mutationResolver) UpdateProfile(ctx context.Context, input *models.UpdateUser) (*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	country, err := new(repositories.CountryRepository).GetByID(input.CountryID)
@@ -88,12 +89,38 @@ func (r *queryResolver) GetProfile(ctx context.Context, customURL string) (*mode
 	return new(repositories.UserRepository).GetByCustomURL(customURL)
 }
 
-func (r *queryResolver) Users(ctx context.Context, page int) (*models.UserPagination, error) {
-	if user := middlewares.UseAuth(ctx); user != nil {
-		if user.AccountName != "Admin" {
-			return nil, errors.New("not authorized")
-		}
-		return new(repositories.UserRepository).GetAll(page)
+func (r *queryResolver) Users(ctx context.Context, page int64) (*models.UserPagination, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("not authenticated")
+
+	if user.AccountName != "Admin" {
+		return nil, errors.New("not authorized")
+	}
+
+	return new(repositories.UserRepository).GetAll(int(page))
 }
+
+func (r *userResolver) Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error) {
+	var games []*models.Game
+	return games, facades.UseDB().Model(obj).Association("UserWishlist").Find(&games)
+}
+
+func (r *userResolver) WishlistCount(ctx context.Context, obj *models.User) (int64, error) {
+	return facades.UseDB().Model(obj).Association("UserWishlist").Count(), nil
+}
+
+func (r *userResolver) Cart(ctx context.Context, obj *models.User) ([]*models.Game, error) {
+	var games []*models.Game
+	return games, facades.UseDB().Model(obj).Association("UserCart").Find(&games)
+}
+
+func (r *userResolver) CartCount(ctx context.Context, obj *models.User) (int64, error) {
+	return facades.UseDB().Model(obj).Association("UserCart").Count(), nil
+}
+
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
+type userResolver struct{ *Resolver }

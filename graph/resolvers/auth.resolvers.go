@@ -71,9 +71,9 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 }
 
 func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	if os.Getenv("ENV") == "production" {
@@ -99,8 +99,16 @@ func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 	return user, nil
 }
 
-func (r *mutationResolver) RefreshToken(ctx context.Context) (bool, error) {
-	user := middlewares.UseAuth(ctx)
+func (r *queryResolver) Auth(ctx context.Context) (*models.User, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if user != nil {
+		return user, nil
+	}
+	return nil, err
+}
+
+func (r *queryResolver) RefreshToken(ctx context.Context) (bool, error) {
+	user, err := middlewares.UseAuth(ctx)
 	if user == nil {
 		return false, errors.New("not authenticated")
 	}
@@ -144,14 +152,6 @@ func (r *mutationResolver) RefreshToken(ctx context.Context) (bool, error) {
 	middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", cookie.String())
 
 	return true, nil
-}
-
-func (r *queryResolver) Auth(ctx context.Context) (*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user != nil {
-		return user, nil
-	}
-	return nil, errors.New("not authenticated")
 }
 
 // Mutation returns generated.MutationResolver implementation.

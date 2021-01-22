@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -13,9 +12,9 @@ import (
 )
 
 func (r *mutationResolver) Befriend(ctx context.Context, userID int64) (*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var friend models.User
@@ -40,9 +39,9 @@ func (r *mutationResolver) Befriend(ctx context.Context, userID int64) (*models.
 }
 
 func (r *mutationResolver) Unfriend(ctx context.Context, userID int64) (*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var friend models.User
@@ -51,15 +50,16 @@ func (r *mutationResolver) Unfriend(ctx context.Context, userID int64) (*models.
 	}
 
 	return &friend, facades.UseDB().
-		Where("user_id = ? or friend_id = ?", friend.ID, friend.ID).
+		Where("user_id = ? and friend_id = ?", friend.ID, user.ID).
+		Where("user_id = ? and friend_id = ?", user.ID, friend.ID).
 		Delete(&models.Friendship{}).
 		Error
 }
 
 func (r *queryResolver) Friends(ctx context.Context) ([]*models.User, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var friendships []*models.Friendship

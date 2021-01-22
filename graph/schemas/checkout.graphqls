@@ -1,0 +1,14 @@
+extend type Mutation {
+    checkoutWithWallet: Float!
+    checkoutWithCard: Float!
+    giftWithWallet(input: Gift!): Float!
+    giftWithCard(input: Gift!): Float!
+}
+
+input Gift {
+    userId: ID!
+    firstName: String!
+    message: String!
+    sentiment: String!
+    signature: String!
+}

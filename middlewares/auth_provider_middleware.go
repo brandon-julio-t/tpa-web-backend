@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"context"
+	"errors"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/repositories"
@@ -50,7 +51,10 @@ func (AuthProviderMiddleware) Create() func(context *gin.Context) {
 	}
 }
 
-func UseAuth(ctx context.Context) *models.User {
-	user, _ := ctx.Value(authProviderMiddlewareKey).(*models.User)
-	return user
+func UseAuth(ctx context.Context) (*models.User, error) {
+	user, ok := ctx.Value(authProviderMiddlewareKey).(*models.User)
+	if !ok || user == nil {
+		return nil, errors.New("not authenticated")
+	}
+	return user, nil
 }

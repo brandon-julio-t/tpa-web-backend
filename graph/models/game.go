@@ -6,13 +6,18 @@ import (
 
 type Game struct {
 	ID                 int64 `gorm:"primaryKey;autoIncrement:true"`
-	CreatedAt          time.Time
-	Title              string
-	Description        string
-	Price              float64
-	BannerID           int64
 	Banner             AssetFile
-	Slideshows         []*GameSlideshow
+	BannerID           int64
+	CreatedAt          time.Time
+	Description        string
+	Discount           float64
 	GameTags           []*GameTag `gorm:"many2many:game_tag_mappings;"`
+	GenreID            int64
+	Genre              GameGenre
+	HoursPlayed        float64
+	IsInappropriate    bool
+	Price              float64
+	GameSlideshows     []*GameSlideshow
 	SystemRequirements string
+	Title              string
 }

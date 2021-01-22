@@ -25,16 +25,17 @@ import (
 func main() {
 	r := gin.Default()
 
-	r.Use(cors.New(cors.Config{
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
-		AllowOrigins:     []string{"http://localhost:4200", "https://tpa-web-br20-2.netlify.app"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
-
-	r.Use(new(middlewares.GinProviderMiddleware).Create())
-	r.Use(new(middlewares.AuthProviderMiddleware).Create())
+	r.Use(
+		cors.New(cors.Config{
+			AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"},
+			AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
+			AllowOrigins:     []string{"http://localhost:4200", "https://tpa-web-br20-2.netlify.app"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}),
+		new(middlewares.GinProviderMiddleware).Create(),
+		new(middlewares.AuthProviderMiddleware).Create(),
+	)
 
 	r.GET("/", func(context *gin.Context) {
 		playground.Handler("GraphQL playground", "/graphql").ServeHTTP(context.Writer, context.Request)
@@ -69,6 +70,7 @@ func main() {
 	})
 
 	gql.AddTransport(transport.POST{})
+	gql.AddTransport(transport.MultipartForm{})
 	gql.AddTransport(transport.Websocket{
 		KeepAlivePingInterval: 10 * time.Second,
 		Upgrader: websocket.Upgrader{

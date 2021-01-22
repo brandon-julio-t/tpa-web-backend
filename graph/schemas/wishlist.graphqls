@@ -1,0 +1,4 @@
+extend type Mutation {
+    addToWishlist(gameId: ID!): Game!
+    removeFromWishlist(gameId: ID!): Game!
+}

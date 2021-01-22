@@ -6,7 +6,7 @@ import (
 )
 
 type TopUpCode struct {
-	ID     int64 `gorm:"primaryKey"`
+	ID     int64  `gorm:"primaryKey"`
 	Code   string `gorm:"uniqueIndex"`
 	Amount float64
 }

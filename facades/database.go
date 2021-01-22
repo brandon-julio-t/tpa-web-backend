@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"log"
 	"os"
@@ -49,5 +50,5 @@ func init() {
 }
 
 func UseDB() *gorm.DB {
-	return databaseSingleton
+	return databaseSingleton.Preload(clause.Associations)
 }

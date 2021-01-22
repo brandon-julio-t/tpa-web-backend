@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -14,9 +13,9 @@ import (
 )
 
 func (r *mutationResolver) SubmitReport(ctx context.Context, userID int64, description string) (*models.Report, error) {
-	reporter := middlewares.UseAuth(ctx)
-	if reporter == nil {
-		return nil, errors.New("not authenticated")
+	reporter, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	reported, err := new(repositories.UserRepository).GetByID(userID)

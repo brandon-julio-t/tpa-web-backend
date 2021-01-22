@@ -13,17 +13,27 @@ type CreateGame struct {
 	Banner             graphql.Upload    `json:"banner"`
 	Slideshows         []*graphql.Upload `json:"slideshows"`
 	GameTags           []int64           `json:"gameTags"`
+	GenreID            int64             `json:"genreId"`
+	IsInappropriate    bool              `json:"isInappropriate"`
 	SystemRequirements string            `json:"systemRequirements"`
 }
 
 type GamePagination struct {
 	Data       []*Game `json:"data"`
-	TotalPages int     `json:"totalPages"`
+	TotalPages int64   `json:"totalPages"`
+}
+
+type Gift struct {
+	UserID    int64  `json:"userId"`
+	FirstName string `json:"firstName"`
+	Message   string `json:"message"`
+	Sentiment string `json:"sentiment"`
+	Signature string `json:"signature"`
 }
 
 type PromoPagination struct {
 	Data       []*Promo `json:"data"`
-	TotalPages int      `json:"totalPages"`
+	TotalPages int64    `json:"totalPages"`
 }
 
 type UpdateGame struct {
@@ -34,6 +44,8 @@ type UpdateGame struct {
 	Banner             *graphql.Upload   `json:"banner"`
 	Slideshows         []*graphql.Upload `json:"slideshows"`
 	GameTags           []int64           `json:"gameTags"`
+	GenreID            int64             `json:"genreId"`
+	IsInappropriate    bool              `json:"isInappropriate"`
 	SystemRequirements string            `json:"systemRequirements"`
 }
 
@@ -49,5 +61,5 @@ type UpdateUser struct {
 
 type UserPagination struct {
 	Data       []*User `json:"data"`
-	TotalPages int     `json:"totalPages"`
+	TotalPages int64   `json:"totalPages"`
 }

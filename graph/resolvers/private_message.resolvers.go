@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
@@ -14,9 +13,9 @@ import (
 )
 
 func (r *mutationResolver) AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var friend models.User
@@ -42,9 +41,9 @@ func (r *mutationResolver) AddPrivateMessage(ctx context.Context, friendID int64
 }
 
 func (r *queryResolver) PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	var messages []*models.PrivateMessage
@@ -60,9 +59,9 @@ func (r *queryResolver) PrivateMessage(ctx context.Context, friendID int64) ([]*
 }
 
 func (r *subscriptionResolver) PrivateMessageAdded(ctx context.Context) (<-chan *models.PrivateMessage, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	socket := make(chan *models.PrivateMessage, 1)

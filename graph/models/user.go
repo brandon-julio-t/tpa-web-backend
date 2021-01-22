@@ -21,7 +21,7 @@ type User struct {
 	CountryID        int64
 	CustomURL        string `gorm:"uniqueIndex"`
 	DisplayName      string
-	Email            string  `gorm:"uniqueIndex"`
+	Email            string `gorm:"uniqueIndex"`
 	Friends          []*Friendship
 	Password         string
 	ProfilePictureID int64
@@ -30,6 +30,8 @@ type User struct {
 	RealName         string
 	Summary          string
 	WalletBalance    float64
+	UserWishlist     []*Game   `gorm:"many2many:wishlist;"`
+	UserCart         []*Game   `gorm:"many2many:cart;"`
 	SuspendedAt      time.Time `gorm:"index"`
 }
 

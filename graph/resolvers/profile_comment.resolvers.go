@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -13,9 +12,9 @@ import (
 )
 
 func (r *mutationResolver) CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
-		return nil, errors.New("not authenticated")
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	profileComment := models.ProfileComment{

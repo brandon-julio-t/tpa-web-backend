@@ -11,10 +11,14 @@ type User {
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
-    summary: String!
-    walletBalance: Float!
-    suspendedAt: Time
     reportCounts: Int!
+    summary: String!
+    suspendedAt: Time
+    walletBalance: Float!
+    wishlist: [Game!]!
+    wishlistCount: Int!
+    cart: [Game!]!
+    cartCount: Int!
 }
 
 type UserPagination {

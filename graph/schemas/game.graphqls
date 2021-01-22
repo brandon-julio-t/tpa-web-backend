@@ -1,13 +1,18 @@
 type Game {
     id: ID!
-    createdAt: Time!
-    title: String!
-    description: String!
-    price: Float!
     banner: AssetFile!
+    createdAt: Time!
+    description: String!
+    discount: Float!
+    genre: GameGenre!
+    isInappropriate: Boolean!
+    isInCart: Boolean!
+    isInWishlist: Boolean!
+    price: Float!
     slideshows: [GameSlideshow!]!
-    tags: [GameTag!]!
     systemRequirements: String!
+    tags: [GameTag!]!
+    title: String!
 }
 
 type GameSlideshow {
@@ -20,9 +25,16 @@ type GamePagination {
     totalPages: Int!
 }
 
+type GameGenre {
+    id: ID!
+    name: String!
+}
+
 extend type Query {
     games(page: Int!): GamePagination!
+    genres: [GameGenre!]!
     getGameById(id: ID!): Game!
+    featuredAndRecommendedGames: [Game!]!
 }
 
 extend type Mutation {
@@ -38,6 +50,8 @@ input CreateGame {
     banner: Upload!
     slideshows: [Upload!]!
     gameTags: [ID!]!
+    genreId: ID!
+    isInappropriate: Boolean!
     systemRequirements: String!
 }
 
@@ -49,5 +63,7 @@ input UpdateGame {
     banner: Upload
     slideshows: [Upload]
     gameTags: [ID!]!
+    genreId: ID!
+    isInappropriate: Boolean!
     systemRequirements: String!
 }

@@ -23,16 +23,26 @@ func (GameRepository) GetAll(page int) (*models.GamePagination, error) {
 	}
 	return &models.GamePagination{
 		Data:       games,
-		TotalPages: int(math.Ceil(float64(totalGames)/float64(3))),
+		TotalPages: int64(math.Ceil(float64(totalGames) / float64(3))),
 	}, nil
 }
 
 func usePreloadedGame() *gorm.DB {
 	return facades.UseDB().
 		Preload("Banner").
-		Preload("Slideshows").
-		Preload("Slideshows.File").
-		Preload("GameTags")
+		Preload("GameTags").
+		Preload("Genre").
+		Preload("GameSlideshows").
+		Preload("GameSlideshows.GameSlideshowFile")
+}
+
+func (GameRepository) GetFeaturedAndRecommendedGames() ([]*models.Game, error) {
+	var games []*models.Game
+	return games, usePreloadedGame().
+		Order("hours_played desc").
+		Limit(5).
+		Find(&games).
+		Error
 }
 
 func (GameRepository) GetById(id int64) (*models.Game, error) {
@@ -57,7 +67,7 @@ func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
 		}
 
 		slideshows = append(slideshows, &models.GameSlideshow{
-			File: models.AssetFile{
+			GameSlideshowFile: models.AssetFile{
 				File:        data,
 				ContentType: slideshowInput.ContentType,
 			},
@@ -87,7 +97,9 @@ func (GameRepository) Create(input models.CreateGame) (*models.Game, error) {
 		Price:              input.Price,
 		BannerID:           gameBanner.ID,
 		Banner:             gameBanner,
-		Slideshows:         slideshows,
+		GenreID:            input.GenreID,
+		IsInappropriate:    input.IsInappropriate,
+		GameSlideshows:     slideshows,
 		GameTags:           gameTags,
 		SystemRequirements: input.SystemRequirements,
 	}
@@ -106,6 +118,16 @@ func (r GameRepository) Update(input models.UpdateGame) (*models.Game, error) {
 	game.Price = input.Price
 	game.Title = input.Title
 	game.Description = input.Description
+	game.IsInappropriate = input.IsInappropriate
+
+	var genre models.GameGenre
+
+	if err := facades.UseDB().First(&genre, input.GenreID).Error; err != nil {
+		return nil, err
+	}
+
+	game.Genre = genre
+	game.GenreID = input.GenreID
 
 	return &game, facades.UseDB().Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(&game).Association("GameTags").Clear(); err != nil {
@@ -135,12 +157,12 @@ func (r GameRepository) Update(input models.UpdateGame) (*models.Game, error) {
 			return err
 		}
 
-		if err := tx.Delete(game.Slideshows).Error; err != nil {
+		if err := tx.Delete(game.GameSlideshows).Error; err != nil {
 			return err
 		}
 
-		for _, slideshow := range game.Slideshows {
-			if err := tx.Delete(&slideshow.File).Error; err != nil {
+		for _, slideshow := range game.GameSlideshows {
+			if err := tx.Delete(&slideshow.GameSlideshowFile).Error; err != nil {
 				return err
 			}
 		}
@@ -153,13 +175,13 @@ func (r GameRepository) Update(input models.UpdateGame) (*models.Game, error) {
 				return err
 			}
 
-			slideshows = append(slideshows, &models.GameSlideshow{File: models.AssetFile{
+			slideshows = append(slideshows, &models.GameSlideshow{GameSlideshowFile: models.AssetFile{
 				File:        slideshowData,
 				ContentType: slideshow.ContentType,
 			}})
 		}
 
-		game.Slideshows = slideshows
+		game.GameSlideshows = slideshows
 
 		return tx.Save(&game).Error
 	})
@@ -177,12 +199,12 @@ func (GameRepository) Delete(id int64) (*models.Game, error) {
 			return err
 		}
 
-		if err := tx.Delete(game.Slideshows).Error; err != nil {
+		if err := tx.Delete(game.GameSlideshows).Error; err != nil {
 			return err
 		}
 
-		for _, slideshow := range game.Slideshows {
-			if err := tx.Delete(slideshow.File).Error; err != nil {
+		for _, slideshow := range game.GameSlideshows {
+			if err := tx.Delete(slideshow.GameSlideshowFile).Error; err != nil {
 				return err
 			}
 		}

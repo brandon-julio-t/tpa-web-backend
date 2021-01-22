@@ -27,10 +27,10 @@ func SeedUsers() error {
 		Password:    string(adminHash),
 		CountryID:   69,
 		ProfilePicture: models.AssetFile{
-			ID:          1,
 			File:        defaultProfilePicture,
 			ContentType: "image/png",
 		},
+		WalletBalance: 100000,
 	})
 
 	userHash, err := bcrypt.GenerateFromPassword([]byte("user"), bcrypt.DefaultCost)
@@ -45,21 +45,21 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          2,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "BR",
-			Email:       "br@slc.com",
+			Email:       "brandon.julio.t@icloud.com",
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          3,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "CC",
@@ -67,10 +67,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          4,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "ST",
@@ -78,10 +78,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          5,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "VN",
@@ -89,10 +89,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          6,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "TC",
@@ -100,10 +100,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          7,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "LL",
@@ -111,10 +111,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          8,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "GA",
@@ -122,10 +122,10 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          9,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
 		},
 		{
 			AccountName: "JP",
@@ -133,10 +133,21 @@ func SeedUsers() error {
 			Password:    string(userHash),
 			CountryID:   69,
 			ProfilePicture: models.AssetFile{
-				ID:          10,
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			WalletBalance: 100000,
+		},
+		{
+			AccountName: "AE",
+			Email:       "ae@slc.com",
+			Password:    string(userHash),
+			CountryID:   69,
+			ProfilePicture: models.AssetFile{
+				File:        defaultProfilePicture,
+				ContentType: "image/png",
+			},
+			WalletBalance: 100000,
 		},
 	}
 

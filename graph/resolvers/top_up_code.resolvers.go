@@ -14,8 +14,8 @@ import (
 )
 
 func (r *mutationResolver) RedeemWallet(ctx context.Context, code string) (bool, error) {
-	user := middlewares.UseAuth(ctx)
-	if user == nil {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
 		return false, errors.New("not authenticated")
 	}
 

@@ -39,7 +39,7 @@ func (r *mutationResolver) DeletePromo(ctx context.Context, id int64) (*models.P
 	return &promo, facades.UseDB().Delete(&promo).Error
 }
 
-func (r *queryResolver) Promos(ctx context.Context, page int) (*models.PromoPagination, error) {
+func (r *queryResolver) Promos(ctx context.Context, page int64) (*models.PromoPagination, error) {
 	var promos []*models.Promo
 	var count int64
 	pageSize := 5
@@ -47,14 +47,14 @@ func (r *queryResolver) Promos(ctx context.Context, page int) (*models.PromoPagi
 	if err := facades.UseDB().
 		Model(&models.Promo{}).
 		Count(&count).
-		Scopes(facades.UsePagination(page, pageSize)).
+		Scopes(facades.UsePagination(int(page), pageSize)).
 		Find(&promos).Error; err != nil {
 		return nil, err
 	}
 
 	return &models.PromoPagination{
 		Data:       promos,
-		TotalPages: int(math.Ceil(float64(count) / float64(pageSize))),
+		TotalPages: int64(math.Ceil(float64(count) / float64(pageSize))),
 	}, nil
 }
 
