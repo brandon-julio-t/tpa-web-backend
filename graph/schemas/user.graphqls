@@ -29,6 +29,7 @@ type UserPagination {
 extend type Query {
     getProfile(customUrl: String!): User!
     users(page: Int!): UserPagination!
+    user(accountName: String!): User!
 }
 
 extend type Mutation {

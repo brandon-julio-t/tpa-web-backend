@@ -1,0 +1,19 @@
+extend type User {
+    stream: String!
+}
+
+extend type Query {
+    streams: [String!]!
+}
+
+extend type Mutation {
+    startStreaming(rtcConnection: String!): String!
+    stopStreaming: Boolean!
+    joinStream(accountName: String!, rtcAnswer: String!): String!
+    newIceCandidate(accountName: String!, candidate: String!): String!
+}
+
+extend type Subscription  {
+    onStreamJoin: String!
+    onNewIceCandidate(accountName: String!): String!
+}

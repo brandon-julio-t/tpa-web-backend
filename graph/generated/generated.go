@@ -114,13 +114,17 @@ type ComplexityRoot struct {
 		DenyUnsuspendRequests    func(childComplexity int, id int64) int
 		GiftWithCard             func(childComplexity int, input models.Gift) int
 		GiftWithWallet           func(childComplexity int, input models.Gift) int
+		JoinStream               func(childComplexity int, accountName string, rtcAnswer string) int
 		Login                    func(childComplexity int, accountName string, password string) int
 		Logout                   func(childComplexity int) int
+		NewIceCandidate          func(childComplexity int, accountName string, candidate string) int
 		RedeemWallet             func(childComplexity int, code string) int
 		Register                 func(childComplexity int, accountName string, email string, password string, countryID int64) int
 		RemoveFromCart           func(childComplexity int, gameID int64) int
 		RemoveFromWishlist       func(childComplexity int, gameID int64) int
 		SendOtp                  func(childComplexity int, email string) int
+		StartStreaming           func(childComplexity int, rtcConnection string) int
+		StopStreaming            func(childComplexity int) int
 		SubmitReport             func(childComplexity int, userID int64, description string) int
 		SuspendAccount           func(childComplexity int, id int64) int
 		Unfriend                 func(childComplexity int, userID int64) int
@@ -173,6 +177,8 @@ type ComplexityRoot struct {
 		Promo                       func(childComplexity int, id int64) int
 		Promos                      func(childComplexity int, page int64) int
 		RefreshToken                func(childComplexity int) int
+		Streams                     func(childComplexity int) int
+		User                        func(childComplexity int, accountName string) int
 		Users                       func(childComplexity int, page int64) int
 	}
 
@@ -185,6 +191,8 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
+		OnNewIceCandidate   func(childComplexity int, accountName string) int
+		OnStreamJoin        func(childComplexity int) int
 		PrivateMessageAdded func(childComplexity int) int
 	}
 
@@ -202,6 +210,7 @@ type ComplexityRoot struct {
 		ProfileTheme   func(childComplexity int) int
 		RealName       func(childComplexity int) int
 		ReportCounts   func(childComplexity int) int
+		Stream         func(childComplexity int) int
 		Summary        func(childComplexity int) int
 		SuspendedAt    func(childComplexity int) int
 		WalletBalance  func(childComplexity int) int
@@ -250,6 +259,10 @@ type MutationResolver interface {
 	UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error)
 	DeletePromo(ctx context.Context, id int64) (*models.Promo, error)
 	SubmitReport(ctx context.Context, userID int64, description string) (*models.Report, error)
+	StartStreaming(ctx context.Context, rtcConnection string) (string, error)
+	StopStreaming(ctx context.Context) (bool, error)
+	JoinStream(ctx context.Context, accountName string, rtcAnswer string) (string, error)
+	NewIceCandidate(ctx context.Context, accountName string, candidate string) (string, error)
 	RedeemWallet(ctx context.Context, code string) (bool, error)
 	UnsuspendRequest(ctx context.Context, accountName string) (string, error)
 	ApproveUnsuspendRequests(ctx context.Context, id int64) (*models.User, error)
@@ -274,12 +287,16 @@ type QueryResolver interface {
 	Promos(ctx context.Context, page int64) (*models.PromoPagination, error)
 	Promo(ctx context.Context, id int64) (*models.Promo, error)
 	GetReportsByUser(ctx context.Context, id int64) ([]*models.Report, error)
+	Streams(ctx context.Context) ([]string, error)
 	GetAllUnsuspendRequests(ctx context.Context) ([]*models.User, error)
 	GetProfile(ctx context.Context, customURL string) (*models.User, error)
 	Users(ctx context.Context, page int64) (*models.UserPagination, error)
+	User(ctx context.Context, accountName string) (*models.User, error)
 }
 type SubscriptionResolver interface {
 	PrivateMessageAdded(ctx context.Context) (<-chan *models.PrivateMessage, error)
+	OnStreamJoin(ctx context.Context) (<-chan string, error)
+	OnNewIceCandidate(ctx context.Context, accountName string) (<-chan string, error)
 }
 type UserResolver interface {
 	Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error)
@@ -287,6 +304,7 @@ type UserResolver interface {
 	Cart(ctx context.Context, obj *models.User) ([]*models.Game, error)
 	CartCount(ctx context.Context, obj *models.User) (int64, error)
 	Friends(ctx context.Context, obj *models.User) ([]*models.User, error)
+	Stream(ctx context.Context, obj *models.User) (string, error)
 }
 
 type executableSchema struct {
@@ -675,6 +693,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.GiftWithWallet(childComplexity, args["input"].(models.Gift)), true
 
+	case "Mutation.joinStream":
+		if e.complexity.Mutation.JoinStream == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_joinStream_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.JoinStream(childComplexity, args["accountName"].(string), args["rtcAnswer"].(string)), true
+
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -693,6 +723,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity), true
+
+	case "Mutation.newIceCandidate":
+		if e.complexity.Mutation.NewIceCandidate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_newIceCandidate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.NewIceCandidate(childComplexity, args["accountName"].(string), args["candidate"].(string)), true
 
 	case "Mutation.redeemWallet":
 		if e.complexity.Mutation.RedeemWallet == nil {
@@ -753,6 +795,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SendOtp(childComplexity, args["email"].(string)), true
+
+	case "Mutation.startStreaming":
+		if e.complexity.Mutation.StartStreaming == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_startStreaming_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.StartStreaming(childComplexity, args["rtcConnection"].(string)), true
+
+	case "Mutation.stopStreaming":
+		if e.complexity.Mutation.StopStreaming == nil {
+			break
+		}
+
+		return e.complexity.Mutation.StopStreaming(childComplexity), true
 
 	case "Mutation.submitReport":
 		if e.complexity.Mutation.SubmitReport == nil {
@@ -1093,6 +1154,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.RefreshToken(childComplexity), true
 
+	case "Query.streams":
+		if e.complexity.Query.Streams == nil {
+			break
+		}
+
+		return e.complexity.Query.Streams(childComplexity), true
+
+	case "Query.user":
+		if e.complexity.Query.User == nil {
+			break
+		}
+
+		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.User(childComplexity, args["accountName"].(string)), true
+
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
 			break
@@ -1139,6 +1219,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Report.Reporter(childComplexity), true
+
+	case "Subscription.onNewIceCandidate":
+		if e.complexity.Subscription.OnNewIceCandidate == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_onNewIceCandidate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.OnNewIceCandidate(childComplexity, args["accountName"].(string)), true
+
+	case "Subscription.onStreamJoin":
+		if e.complexity.Subscription.OnStreamJoin == nil {
+			break
+		}
+
+		return e.complexity.Subscription.OnStreamJoin(childComplexity), true
 
 	case "Subscription.privateMessageAdded":
 		if e.complexity.Subscription.PrivateMessageAdded == nil {
@@ -1237,6 +1336,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ReportCounts(childComplexity), true
+
+	case "User.stream":
+		if e.complexity.User.Stream == nil {
+			break
+		}
+
+		return e.complexity.User.Stream(childComplexity), true
 
 	case "User.summary":
 		if e.complexity.User.Summary == nil {
@@ -1579,6 +1685,26 @@ extend type Mutation {
     submitReport(userId: ID!, description: String!): Report!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/streaming.graphqls", Input: `extend type User {
+    stream: String!
+}
+
+extend type Query {
+    streams: [String!]!
+}
+
+extend type Mutation {
+    startStreaming(rtcConnection: String!): String!
+    stopStreaming: Boolean!
+    joinStream(accountName: String!, rtcAnswer: String!): String!
+    newIceCandidate(accountName: String!, candidate: String!): String!
+}
+
+extend type Subscription  {
+    onStreamJoin: String!
+    onNewIceCandidate(accountName: String!): String!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/top_up_code.graphqls", Input: `extend type Mutation {
     redeemWallet(code: String!): Boolean!
 }`, BuiltIn: false},
@@ -1622,6 +1748,7 @@ type UserPagination {
 extend type Query {
     getProfile(customUrl: String!): User!
     users(page: Int!): UserPagination!
+    user(accountName: String!): User!
 }
 
 extend type Mutation {
@@ -1889,6 +2016,30 @@ func (ec *executionContext) field_Mutation_giftWithWallet_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_joinStream_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["accountName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountName"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["accountName"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["rtcAnswer"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rtcAnswer"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["rtcAnswer"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1910,6 +2061,30 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 		}
 	}
 	args["password"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_newIceCandidate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["accountName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountName"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["accountName"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["candidate"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("candidate"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["candidate"] = arg1
 	return args, nil
 }
 
@@ -2012,6 +2187,21 @@ func (ec *executionContext) field_Mutation_sendOTP_args(ctx context.Context, raw
 		}
 	}
 	args["email"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_startStreaming_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["rtcConnection"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rtcConnection"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["rtcConnection"] = arg0
 	return args, nil
 }
 
@@ -2297,6 +2487,21 @@ func (ec *executionContext) field_Query_promos_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["accountName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountName"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["accountName"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2309,6 +2514,21 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["page"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_onNewIceCandidate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["accountName"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("accountName"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["accountName"] = arg0
 	return args, nil
 }
 
@@ -4198,6 +4418,167 @@ func (ec *executionContext) _Mutation_submitReport(ctx context.Context, field gr
 	return ec.marshalNReport2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐReport(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_startStreaming(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_startStreaming_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().StartStreaming(rctx, args["rtcConnection"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_stopStreaming(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().StopStreaming(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_joinStream(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_joinStream_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().JoinStream(rctx, args["accountName"].(string), args["rtcAnswer"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_newIceCandidate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_newIceCandidate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().NewIceCandidate(rctx, args["accountName"].(string), args["candidate"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_redeemWallet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5567,6 +5948,41 @@ func (ec *executionContext) _Query_getReportsByUser(ctx context.Context, field g
 	return ec.marshalNReport2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐReportᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_streams(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Streams(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_getAllUnsuspendRequests(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5684,6 +6100,48 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	res := resTmp.(*models.UserPagination)
 	fc.Result = res
 	return ec.marshalNUserPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserPagination(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_user(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_user_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().User(rctx, args["accountName"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5972,6 +6430,103 @@ func (ec *executionContext) _Subscription_privateMessageAdded(ctx context.Contex
 			graphql.MarshalString(field.Alias).MarshalGQL(w)
 			w.Write([]byte{':'})
 			ec.marshalNPrivateMessage2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
+}
+
+func (ec *executionContext) _Subscription_onStreamJoin(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().OnStreamJoin(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan string)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNString2string(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
+}
+
+func (ec *executionContext) _Subscription_onNewIceCandidate(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_onNewIceCandidate_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().OnNewIceCandidate(rctx, args["accountName"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan string)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNString2string(ctx, field.Selections, res).MarshalGQL(w)
 			w.Write([]byte{'}'})
 		})
 	}
@@ -6602,6 +7157,41 @@ func (ec *executionContext) _User_friends(ctx context.Context, field graphql.Col
 	res := resTmp.([]*models.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_stream(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Stream(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _UserPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.UserPagination) (ret graphql.Marshaler) {
@@ -8524,6 +9114,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "startStreaming":
+			out.Values[i] = ec._Mutation_startStreaming(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "stopStreaming":
+			out.Values[i] = ec._Mutation_stopStreaming(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "joinStream":
+			out.Values[i] = ec._Mutation_joinStream(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "newIceCandidate":
+			out.Values[i] = ec._Mutation_newIceCandidate(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "redeemWallet":
 			out.Values[i] = ec._Mutation_redeemWallet(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -8932,6 +9542,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "streams":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_streams(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "getAllUnsuspendRequests":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8969,6 +9593,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_users(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_user(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -9051,6 +9689,10 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "privateMessageAdded":
 		return ec._Subscription_privateMessageAdded(ctx, fields[0])
+	case "onStreamJoin":
+		return ec._Subscription_onStreamJoin(ctx, fields[0])
+	case "onNewIceCandidate":
+		return ec._Subscription_onNewIceCandidate(ctx, fields[0])
 	default:
 		panic("unknown field " + strconv.Quote(fields[0].Name))
 	}
@@ -9203,6 +9845,20 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_friends(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "stream":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_stream(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10102,6 +10758,36 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNTime2timeᚐTime(ctx context.Context, v interface{}) (time.Time, error) {

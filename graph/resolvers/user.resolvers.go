@@ -102,6 +102,11 @@ func (r *queryResolver) Users(ctx context.Context, page int64) (*models.UserPagi
 	return new(repositories.UserRepository).GetAll(int(page))
 }
 
+func (r *queryResolver) User(ctx context.Context, accountName string) (*models.User, error) {
+	user := new(models.User)
+	return user, facades.UseDB().First(user, "account_name = ?", accountName).Error
+}
+
 func (r *userResolver) Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error) {
 	var games []*models.Game
 	return games, facades.UseDB().Model(obj).Association("UserWishlist").Find(&games)
