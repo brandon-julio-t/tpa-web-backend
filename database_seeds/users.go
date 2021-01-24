@@ -26,7 +26,7 @@ func SeedUsers() error {
 		Email:       "admin@admin.com",
 		Password:    string(adminHash),
 		CountryID:   69,
-		ProfilePicture: models.AssetFile{
+		UserProfilePicture: models.AssetFile{
 			File:        defaultProfilePicture,
 			ContentType: "image/png",
 		},
@@ -44,7 +44,7 @@ func SeedUsers() error {
 			Email:       "user@user.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -55,7 +55,7 @@ func SeedUsers() error {
 			Email:       "brandon.julio.t@icloud.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -66,7 +66,7 @@ func SeedUsers() error {
 			Email:       "cc@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -77,7 +77,7 @@ func SeedUsers() error {
 			Email:       "st@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -88,7 +88,7 @@ func SeedUsers() error {
 			Email:       "vn@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -99,7 +99,7 @@ func SeedUsers() error {
 			Email:       "tc@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -110,7 +110,7 @@ func SeedUsers() error {
 			Email:       "ll@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -121,7 +121,7 @@ func SeedUsers() error {
 			Email:       "ga@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -132,7 +132,7 @@ func SeedUsers() error {
 			Email:       "jp@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
@@ -143,12 +143,12 @@ func SeedUsers() error {
 			Email:       "ae@slc.com",
 			Password:    string(userHash),
 			CountryID:   69,
-			ProfilePicture: models.AssetFile{
+			UserProfilePicture: models.AssetFile{
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
 			WalletBalance: 100000,
-		},
+		},	
 	}
 
 	for _, user := range users {

@@ -15,24 +15,24 @@ import (
 )
 
 type User struct {
-	ID               int64  `gorm:"primaryKey"`
-	AccountName      string `gorm:"uniqueIndex"`
-	Country          Country
-	CountryID        int64
-	CustomURL        string `gorm:"uniqueIndex"`
-	DisplayName      string
-	Email            string `gorm:"uniqueIndex"`
-	Friends          []*Friendship
-	Password         string
-	ProfilePictureID int64
-	ProfilePicture   AssetFile
-	ProfileTheme     string
-	RealName         string
-	Summary          string
-	WalletBalance    float64
-	UserWishlist     []*Game   `gorm:"many2many:wishlist;"`
-	UserCart         []*Game   `gorm:"many2many:cart;"`
-	SuspendedAt      time.Time `gorm:"index"`
+	ID                   int64  `gorm:"primaryKey"`
+	AccountName          string `gorm:"uniqueIndex"`
+	Country              Country
+	CountryID            int64
+	CustomURL            string `gorm:"uniqueIndex"`
+	DisplayName          string
+	Email                string `gorm:"uniqueIndex"`
+	Friends              []*Friendship
+	Password             string
+	UserProfilePictureID int64
+	UserProfilePicture   AssetFile
+	ProfileTheme         string
+	RealName             string
+	Summary              string
+	WalletBalance        float64
+	UserWishlist         []*Game   `gorm:"many2many:wishlist;"`
+	UserCart             []*Game   `gorm:"many2many:cart;"`
+	SuspendedAt          time.Time `gorm:"index"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {
@@ -43,7 +43,7 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	}
 
 	u.ProfileTheme = "#4B5563"
-	u.ProfilePicture = AssetFile{File: defaultProfilePicture, ContentType: "image/png"}
+	u.UserProfilePicture = AssetFile{File: defaultProfilePicture, ContentType: "image/png"}
 	u.DisplayName = u.AccountName
 	u.CustomURL = uuid.Must(uuid.NewRandom()).String()
 

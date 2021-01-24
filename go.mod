@@ -17,8 +17,11 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/joho/godotenv v1.3.0
 	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394
+	github.com/pion/rtcp v1.2.6 // indirect
+	github.com/pion/webrtc/v3 v3.0.4 // indirect
+	github.com/pions/webrtc v1.2.0
 	github.com/vektah/gqlparser/v2 v2.1.0
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	gorm.io/driver/postgres v1.0.6
 	gorm.io/gorm v1.20.11
 	syreclabs.com/go/faker v1.2.3

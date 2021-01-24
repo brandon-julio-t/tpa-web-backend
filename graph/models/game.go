@@ -17,6 +17,7 @@ type Game struct {
 	HoursPlayed        float64
 	IsInappropriate    bool
 	Price              float64
+	GameGameReviews    []*GameReview `gorm:"foreignKey:GameReviewGameID"`
 	GameSlideshows     []*GameSlideshow
 	SystemRequirements string
 	Title              string

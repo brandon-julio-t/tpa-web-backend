@@ -54,9 +54,9 @@ func (r *mutationResolver) UpdateProfile(ctx context.Context, input *models.Upda
 			return nil, err
 		}
 
-		user.ProfilePicture.File = profilePicture
-		user.ProfilePicture.ContentType = input.Avatar.ContentType
-		if err := facades.UseDB().Save(&user.ProfilePicture).Error; err != nil {
+		user.UserProfilePicture.File = profilePicture
+		user.UserProfilePicture.ContentType = input.Avatar.ContentType
+		if err := facades.UseDB().Save(&user.UserProfilePicture).Error; err != nil {
 			return nil, err
 		}
 	}
@@ -105,6 +105,10 @@ func (r *queryResolver) Users(ctx context.Context, page int64) (*models.UserPagi
 func (r *queryResolver) User(ctx context.Context, accountName string) (*models.User, error) {
 	user := new(models.User)
 	return user, facades.UseDB().First(user, "account_name = ?", accountName).Error
+}
+
+func (r *userResolver) ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error) {
+	return &obj.UserProfilePicture, facades.UseDB().Preload("UserProfilePicture").First(obj).Error
 }
 
 func (r *userResolver) Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error) {

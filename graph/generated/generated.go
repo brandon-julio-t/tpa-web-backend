@@ -38,6 +38,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Game() GameResolver
+	GameReview() GameReviewResolver
 	GameSlideshow() GameSlideshowResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
@@ -69,7 +70,9 @@ type ComplexityRoot struct {
 		IsInCart           func(childComplexity int) int
 		IsInWishlist       func(childComplexity int) int
 		IsInappropriate    func(childComplexity int) int
+		MostHelpfulReviews func(childComplexity int) int
 		Price              func(childComplexity int) int
+		RecentReviews      func(childComplexity int) int
 		Slideshows         func(childComplexity int) int
 		SystemRequirements func(childComplexity int) int
 		Tags               func(childComplexity int) int
@@ -84,6 +87,16 @@ type ComplexityRoot struct {
 	GamePagination struct {
 		Data       func(childComplexity int) int
 		TotalPages func(childComplexity int) int
+	}
+
+	GameReview struct {
+		Content       func(childComplexity int) int
+		CreatedAt     func(childComplexity int) int
+		DownVotes     func(childComplexity int) int
+		ID            func(childComplexity int) int
+		IsRecommended func(childComplexity int) int
+		UpVotes       func(childComplexity int) int
+		User          func(childComplexity int) int
 	}
 
 	GameSlideshow struct {
@@ -108,10 +121,13 @@ type ComplexityRoot struct {
 		CreateGame               func(childComplexity int, input models.CreateGame) int
 		CreateProfileComment     func(childComplexity int, profileID int64, comment string) int
 		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
+		CreateReview             func(childComplexity int, gameID int64, content string, isRecommended bool) int
 		DeleteGame               func(childComplexity int, id int64) int
 		DeleteProfileComment     func(childComplexity int, id int64) int
 		DeletePromo              func(childComplexity int, id int64) int
+		DeleteReview             func(childComplexity int, id int64) int
 		DenyUnsuspendRequests    func(childComplexity int, id int64) int
+		DownVoteReview           func(childComplexity int, id int64) int
 		GiftWithCard             func(childComplexity int, input models.Gift) int
 		GiftWithWallet           func(childComplexity int, input models.Gift) int
 		JoinStream               func(childComplexity int, accountName string, rtcAnswer string) int
@@ -129,6 +145,7 @@ type ComplexityRoot struct {
 		SuspendAccount           func(childComplexity int, id int64) int
 		Unfriend                 func(childComplexity int, userID int64) int
 		UnsuspendRequest         func(childComplexity int, accountName string) int
+		UpVoteReview             func(childComplexity int, id int64) int
 		UpdateGame               func(childComplexity int, input models.UpdateGame) int
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
 		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
@@ -231,6 +248,15 @@ type GameResolver interface {
 	Slideshows(ctx context.Context, obj *models.Game) ([]*models.GameSlideshow, error)
 
 	Tags(ctx context.Context, obj *models.Game) ([]*models.GameTag, error)
+
+	MostHelpfulReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
+	RecentReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
+}
+type GameReviewResolver interface {
+	User(ctx context.Context, obj *models.GameReview) (*models.User, error)
+
+	UpVotes(ctx context.Context, obj *models.GameReview) (int64, error)
+	DownVotes(ctx context.Context, obj *models.GameReview) (int64, error)
 }
 type GameSlideshowResolver interface {
 	File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error)
@@ -250,6 +276,10 @@ type MutationResolver interface {
 	CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error)
 	UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error)
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
+	CreateReview(ctx context.Context, gameID int64, content string, isRecommended bool) (*models.GameReview, error)
+	DeleteReview(ctx context.Context, id int64) (*models.GameReview, error)
+	UpVoteReview(ctx context.Context, id int64) (*models.GameReview, error)
+	DownVoteReview(ctx context.Context, id int64) (*models.GameReview, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
@@ -299,6 +329,8 @@ type SubscriptionResolver interface {
 	OnNewIceCandidate(ctx context.Context, accountName string) (<-chan string, error)
 }
 type UserResolver interface {
+	ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error)
+
 	Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error)
 	WishlistCount(ctx context.Context, obj *models.User) (int64, error)
 	Cart(ctx context.Context, obj *models.User) ([]*models.Game, error)
@@ -413,12 +445,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Game.IsInappropriate(childComplexity), true
 
+	case "Game.mostHelpfulReviews":
+		if e.complexity.Game.MostHelpfulReviews == nil {
+			break
+		}
+
+		return e.complexity.Game.MostHelpfulReviews(childComplexity), true
+
 	case "Game.price":
 		if e.complexity.Game.Price == nil {
 			break
 		}
 
 		return e.complexity.Game.Price(childComplexity), true
+
+	case "Game.recentReviews":
+		if e.complexity.Game.RecentReviews == nil {
+			break
+		}
+
+		return e.complexity.Game.RecentReviews(childComplexity), true
 
 	case "Game.slideshows":
 		if e.complexity.Game.Slideshows == nil {
@@ -475,6 +521,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GamePagination.TotalPages(childComplexity), true
+
+	case "GameReview.content":
+		if e.complexity.GameReview.Content == nil {
+			break
+		}
+
+		return e.complexity.GameReview.Content(childComplexity), true
+
+	case "GameReview.createdAt":
+		if e.complexity.GameReview.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.GameReview.CreatedAt(childComplexity), true
+
+	case "GameReview.downVotes":
+		if e.complexity.GameReview.DownVotes == nil {
+			break
+		}
+
+		return e.complexity.GameReview.DownVotes(childComplexity), true
+
+	case "GameReview.id":
+		if e.complexity.GameReview.ID == nil {
+			break
+		}
+
+		return e.complexity.GameReview.ID(childComplexity), true
+
+	case "GameReview.isRecommended":
+		if e.complexity.GameReview.IsRecommended == nil {
+			break
+		}
+
+		return e.complexity.GameReview.IsRecommended(childComplexity), true
+
+	case "GameReview.upVotes":
+		if e.complexity.GameReview.UpVotes == nil {
+			break
+		}
+
+		return e.complexity.GameReview.UpVotes(childComplexity), true
+
+	case "GameReview.user":
+		if e.complexity.GameReview.User == nil {
+			break
+		}
+
+		return e.complexity.GameReview.User(childComplexity), true
 
 	case "GameSlideshow.file":
 		if e.complexity.GameSlideshow.File == nil {
@@ -621,6 +716,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreatePromo(childComplexity, args["discount"].(float64), args["endAt"].(time.Time)), true
 
+	case "Mutation.createReview":
+		if e.complexity.Mutation.CreateReview == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createReview_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateReview(childComplexity, args["gameId"].(int64), args["content"].(string), args["isRecommended"].(bool)), true
+
 	case "Mutation.deleteGame":
 		if e.complexity.Mutation.DeleteGame == nil {
 			break
@@ -657,6 +764,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeletePromo(childComplexity, args["id"].(int64)), true
 
+	case "Mutation.deleteReview":
+		if e.complexity.Mutation.DeleteReview == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteReview_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteReview(childComplexity, args["id"].(int64)), true
+
 	case "Mutation.denyUnsuspendRequests":
 		if e.complexity.Mutation.DenyUnsuspendRequests == nil {
 			break
@@ -668,6 +787,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DenyUnsuspendRequests(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.downVoteReview":
+		if e.complexity.Mutation.DownVoteReview == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_downVoteReview_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DownVoteReview(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.giftWithCard":
 		if e.complexity.Mutation.GiftWithCard == nil {
@@ -862,6 +993,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UnsuspendRequest(childComplexity, args["accountName"].(string)), true
+
+	case "Mutation.upVoteReview":
+		if e.complexity.Mutation.UpVoteReview == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_upVoteReview_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpVoteReview(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.updateGame":
 		if e.complexity.Mutation.UpdateGame == nil {
@@ -1598,6 +1741,28 @@ input UpdateGame {
     systemRequirements: String!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/game_review.graphqls", Input: `type GameReview {
+    id: ID!
+    user: User!
+    content: String!
+    isRecommended: Boolean!
+    createdAt: Time!
+    upVotes: Int!
+    downVotes: Int!
+}
+
+extend type Game {
+    mostHelpfulReviews: [GameReview!]!
+    recentReviews: [GameReview!]!
+}
+
+extend type Mutation {
+    createReview(gameId: ID!, content: String!, isRecommended: Boolean!): GameReview!
+    deleteReview(id: ID!): GameReview!
+    upVoteReview(id: ID!): GameReview!
+    downVoteReview(id: ID!): GameReview!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/game_tag.graphqls", Input: `type GameTag {
     id: ID!
     name: String!
@@ -1926,6 +2091,39 @@ func (ec *executionContext) field_Mutation_createPromo_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["gameId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["gameId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["content"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("content"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["content"] = arg1
+	var arg2 bool
+	if tmp, ok := rawArgs["isRecommended"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isRecommended"))
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["isRecommended"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1971,7 +2169,37 @@ func (ec *executionContext) field_Mutation_deletePromo_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_denyUnsuspendRequests_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_downVoteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -2271,6 +2499,21 @@ func (ec *executionContext) field_Mutation_unsuspendRequest_args(ctx context.Con
 		}
 	}
 	args["accountName"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_upVoteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -3200,6 +3443,76 @@ func (ec *executionContext) _Game_title(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Game_mostHelpfulReviews(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().MostHelpfulReviews(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReviewᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Game_recentReviews(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().RecentReviews(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReviewᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _GameGenre_id(ctx context.Context, field graphql.CollectedField, obj *models.GameGenre) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3324,6 +3637,251 @@ func (ec *executionContext) _GamePagination_totalPages(ctx context.Context, fiel
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_id(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_user(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_content(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Content, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_isRecommended(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRecommended, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_upVotes(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().UpVotes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_downVotes(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().DownVotes(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4038,6 +4596,174 @@ func (ec *executionContext) _Mutation_deleteGame(ctx context.Context, field grap
 	res := resTmp.(*models.Game)
 	fc.Result = res
 	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createReview(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createReview_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateReview(rctx, args["gameId"].(int64), args["content"].(string), args["isRecommended"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteReview(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteReview_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteReview(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_upVoteReview(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_upVoteReview_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpVoteReview(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_downVoteReview(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_downVoteReview_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DownVoteReview(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.GameReview)
+	fc.Result = res
+	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_sendOTP(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6753,14 +7479,14 @@ func (ec *executionContext) _User_profilePicture(ctx context.Context, field grap
 		Object:     "User",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ProfilePicture, nil
+		return ec.resolvers.User().ProfilePicture(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6772,9 +7498,9 @@ func (ec *executionContext) _User_profilePicture(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(models.AssetFile)
+	res := resTmp.(*models.AssetFile)
 	fc.Result = res
-	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
+	return ec.marshalNAssetFile2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_profileTheme(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -8836,6 +9562,34 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "mostHelpfulReviews":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_mostHelpfulReviews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "recentReviews":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_recentReviews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8900,6 +9654,90 @@ func (ec *executionContext) _GamePagination(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var gameReviewImplementors = []string{"GameReview"}
+
+func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSet, obj *models.GameReview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, gameReviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("GameReview")
+		case "id":
+			out.Values[i] = ec._GameReview_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "content":
+			out.Values[i] = ec._GameReview_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "isRecommended":
+			out.Values[i] = ec._GameReview_isRecommended(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "createdAt":
+			out.Values[i] = ec._GameReview_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "upVotes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_upVotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "downVotes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_downVotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9066,6 +9904,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteGame":
 			out.Values[i] = ec._Mutation_deleteGame(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createReview":
+			out.Values[i] = ec._Mutation_createReview(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteReview":
+			out.Values[i] = ec._Mutation_deleteReview(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "upVoteReview":
+			out.Values[i] = ec._Mutation_upVoteReview(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "downVoteReview":
+			out.Values[i] = ec._Mutation_downVoteReview(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9740,10 +10598,19 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				atomic.AddUint32(&invalids, 1)
 			}
 		case "profilePicture":
-			out.Values[i] = ec._User_profilePicture(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_profilePicture(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "profileTheme":
 			out.Values[i] = ec._User_profileTheme(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -10366,6 +11233,57 @@ func (ec *executionContext) marshalNGamePagination2ᚖgithubᚗcomᚋbrandonᚑj
 		return graphql.Null
 	}
 	return ec._GamePagination(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNGameReview2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx context.Context, sel ast.SelectionSet, v models.GameReview) graphql.Marshaler {
+	return ec._GameReview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNGameReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReviewᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.GameReview) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx context.Context, sel ast.SelectionSet, v *models.GameReview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._GameReview(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGameSlideshow2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameSlideshowᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.GameSlideshow) graphql.Marshaler {

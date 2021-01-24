@@ -65,9 +65,9 @@ func (r *userResolver) Friends(ctx context.Context, obj *models.User) ([]*models
 	var friendships []*models.Friendship
 	if err := facades.UseDB().
 		Preload("User").
-		Preload("User.ProfilePicture").
+		Preload("User.UserProfilePicture").
 		Preload("Friend").
-		Preload("Friend.ProfilePicture").
+		Preload("Friend.UserProfilePicture").
 		Find(&friendships, "user_id = ?", user.ID).
 		Error; err != nil {
 		return nil, err

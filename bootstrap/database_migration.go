@@ -29,11 +29,13 @@ func init() {
 		new(models.GameGenre),
 		new(models.GameSlideshow),
 		new(models.GameTag),
-		new(models.ProfileComment),
+		new(models.GameReview),
+		new(models.GameReviewVote),
 
 		new(models.User),
-		new(models.PrivateMessage),
 		new(models.Friendship),
+		new(models.PrivateMessage),
+		new(models.ProfileComment),
 
 		new(models.GamePurchaseTransactionHeader),
 		new(models.GamePurchaseTransactionDetail),
@@ -56,6 +58,8 @@ func init() {
 		new(models.GameGenre),
 		new(models.GameSlideshow),
 		new(models.GameTag),
+		new(models.GameReview),
+		new(models.GameReviewVote),
 
 		new(models.User),
 		new(models.Friendship),

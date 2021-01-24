@@ -29,7 +29,7 @@ func (r *mutationResolver) CreateProfileComment(ctx context.Context, profileID i
 
 	return &profileComment, facades.UseDB().
 		Preload("User").
-		Preload("User.ProfilePicture").
+		Preload("User.UserProfilePicture").
 		First(&profileComment).
 		Error
 }
@@ -43,7 +43,7 @@ func (r *queryResolver) ProfileComments(ctx context.Context, profileID int64) ([
 	var profileComments []*models.ProfileComment
 	return profileComments, facades.UseDB().
 		Preload("User").
-		Preload("User.ProfilePicture").
+		Preload("User.UserProfilePicture").
 		Where("profile_id = ?", profileID).
 		Order("created_at desc").
 		Find(&profileComments).

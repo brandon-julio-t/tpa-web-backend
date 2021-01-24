@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syreclabs.com/go/faker"
 	"time"
 )
@@ -56,13 +55,40 @@ func SeedGames() error {
 			if err := tx.Create(&models.Game{
 				Banner:          models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
 				CreatedAt:       time.Time{},
-				Description:     strings.Join(faker.Lorem().Paragraphs(faker.Number().NumberInt(1)), "\n\n"),
+				Description:     faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 				Discount:        discount,
 				GameTags:        tags,
 				GenreID:         genreId,
 				HoursPlayed:     hoursPlayed,
 				IsInappropriate: faker.Number().NumberInt(1)%2 == 0,
 				Price:           float64(faker.Commerce().Price()),
+				GameGameReviews: []*models.GameReview{
+					{
+						GameReviewUserID: 2,
+						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
+					},
+					{
+						GameReviewUserID: 2,
+						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
+					},
+					{
+						GameReviewUserID: 2,
+						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
+					},
+					{
+						GameReviewUserID: 2,
+						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
+					},
+					{
+						GameReviewUserID: 2,
+						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
+					},
+				},
 				GameSlideshows: []*models.GameSlideshow{
 					{GameSlideshowFile: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},
 					{GameSlideshowFile: models.AssetFile{File: backgroundSLC, ContentType: "image/png"}},

@@ -16,6 +16,7 @@ var databaseSingleton *gorm.DB = nil
 func init() {
 	if dbUrl := os.Getenv("DATABASE_URL"); dbUrl != "" {
 		db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{
+			PrepareStmt: true,
 			Logger: logger.New(
 				log.New(os.Stdout, "\r\n", log.LstdFlags),
 				logger.Config{

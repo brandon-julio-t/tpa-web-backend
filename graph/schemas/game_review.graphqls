@@ -1,0 +1,21 @@
+type GameReview {
+    id: ID!
+    user: User!
+    content: String!
+    isRecommended: Boolean!
+    createdAt: Time!
+    upVotes: Int!
+    downVotes: Int!
+}
+
+extend type Game {
+    mostHelpfulReviews: [GameReview!]!
+    recentReviews: [GameReview!]!
+}
+
+extend type Mutation {
+    createReview(gameId: ID!, content: String!, isRecommended: Boolean!): GameReview!
+    deleteReview(id: ID!): GameReview!
+    upVoteReview(id: ID!): GameReview!
+    downVoteReview(id: ID!): GameReview!
+}
