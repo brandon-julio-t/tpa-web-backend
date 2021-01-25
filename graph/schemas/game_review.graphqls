@@ -6,6 +6,8 @@ type GameReview {
     createdAt: Time!
     upVotes: Int!
     downVotes: Int!
+    upVoters: [User!]!
+    downVoters: [User!]!
 }
 
 extend type Game {

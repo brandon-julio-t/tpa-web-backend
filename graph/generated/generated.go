@@ -92,9 +92,11 @@ type ComplexityRoot struct {
 	GameReview struct {
 		Content       func(childComplexity int) int
 		CreatedAt     func(childComplexity int) int
+		DownVoters    func(childComplexity int) int
 		DownVotes     func(childComplexity int) int
 		ID            func(childComplexity int) int
 		IsRecommended func(childComplexity int) int
+		UpVoters      func(childComplexity int) int
 		UpVotes       func(childComplexity int) int
 		User          func(childComplexity int) int
 	}
@@ -257,6 +259,8 @@ type GameReviewResolver interface {
 
 	UpVotes(ctx context.Context, obj *models.GameReview) (int64, error)
 	DownVotes(ctx context.Context, obj *models.GameReview) (int64, error)
+	UpVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error)
+	DownVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error)
 }
 type GameSlideshowResolver interface {
 	File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error)
@@ -536,6 +540,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GameReview.CreatedAt(childComplexity), true
 
+	case "GameReview.downVoters":
+		if e.complexity.GameReview.DownVoters == nil {
+			break
+		}
+
+		return e.complexity.GameReview.DownVoters(childComplexity), true
+
 	case "GameReview.downVotes":
 		if e.complexity.GameReview.DownVotes == nil {
 			break
@@ -556,6 +567,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GameReview.IsRecommended(childComplexity), true
+
+	case "GameReview.upVoters":
+		if e.complexity.GameReview.UpVoters == nil {
+			break
+		}
+
+		return e.complexity.GameReview.UpVoters(childComplexity), true
 
 	case "GameReview.upVotes":
 		if e.complexity.GameReview.UpVotes == nil {
@@ -1749,6 +1767,8 @@ input UpdateGame {
     createdAt: Time!
     upVotes: Int!
     downVotes: Int!
+    upVoters: [User!]!
+    downVoters: [User!]!
 }
 
 extend type Game {
@@ -3896,6 +3916,76 @@ func (ec *executionContext) _GameReview_downVotes(ctx context.Context, field gra
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_upVoters(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().UpVoters(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_downVoters(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().DownVoters(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _GameSlideshow_game(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
@@ -9733,6 +9823,34 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 					}
 				}()
 				res = ec._GameReview_downVotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "upVoters":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_upVoters(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "downVoters":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_downVoters(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

@@ -8,7 +8,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/brandon-julio-t/tpa-web-backend/bootstrap"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
-	"github.com/brandon-julio-t/tpa-web-backend/factories"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/resolvers"
@@ -65,9 +64,9 @@ func main() {
 		Resolvers: resolvers.NewResolver(),
 	}))
 
-	gql.Use(extension.AutomaticPersistedQuery{
-		Cache: factories.NewApqCache(),
-	})
+	//gql.Use(extension.AutomaticPersistedQuery{
+	//	Cache: factories.NewApqCache(),
+	//})
 
 	gql.AddTransport(transport.POST{})
 	gql.AddTransport(transport.MultipartForm{})

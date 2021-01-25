@@ -5,7 +5,7 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"time"
 
@@ -13,6 +13,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"gorm.io/gorm"
 )
 
 func (r *gameResolver) MostHelpfulReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error) {
@@ -95,6 +96,36 @@ func (r *gameReviewResolver) DownVotes(ctx context.Context, obj *models.GameRevi
 		Error
 }
 
+func (r *gameReviewResolver) UpVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error) {
+	users := make([]*models.User, 0)
+
+	if err := facades.UseDB().
+		Joins("join game_review_votes grv on users.id = grv.game_review_vote_user_id").
+		Where("is_up_vote = ?", true).
+		Where("grv.game_review_vote_game_review_id = ?", obj.ID).
+		Find(&users).
+		Error; err != nil {
+			return nil, err
+	}
+
+	return users, nil
+}
+
+func (r *gameReviewResolver) DownVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error) {
+	users := make([]*models.User, 0)
+
+	if err := facades.UseDB().
+		Joins("join game_review_votes grv on users.id = grv.game_review_vote_user_id").
+		Where("is_up_vote = ?", false).
+		Where("grv.game_review_vote_game_review_id = ?", obj.ID).
+		Find(&users).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *mutationResolver) CreateReview(ctx context.Context, gameID int64, content string, isRecommended bool) (*models.GameReview, error) {
 	user, err := middlewares.UseAuth(ctx)
 	if err != nil {
@@ -124,11 +155,75 @@ func (r *mutationResolver) DeleteReview(ctx context.Context, id int64) (*models.
 }
 
 func (r *mutationResolver) UpVoteReview(ctx context.Context, id int64) (*models.GameReview, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	review := new(models.GameReview)
+	if err := facades.UseDB().Debug().First(review, id).Error; err != nil {
+		return nil, err
+	}
+	log.Print(review)
+	vote := new(models.GameReviewVote)
+	if err := facades.UseDB().Debug().
+		Where("game_review_vote_user_id = ?", user.ID).
+		Where("game_review_vote_game_review_id = ?", review.ID).
+		First(vote).
+		Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+
+		return review, facades.UseDB().Debug().Create(&models.GameReviewVote{
+			GameReviewVoteGameReview: *review,
+			GameReviewVoteUser:       *user,
+			IsUpVote:                 true,
+		}).Error
+	}
+
+	if vote.IsUpVote {
+		return review, facades.UseDB().Debug().Delete(vote).Error
+	}
+
+	vote.IsUpVote = !vote.IsUpVote
+	return review, facades.UseDB().Debug().Save(vote).Error
 }
 
 func (r *mutationResolver) DownVoteReview(ctx context.Context, id int64) (*models.GameReview, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	review := new(models.GameReview)
+	if err := facades.UseDB().Debug().Debug().First(review, id).Error; err != nil {
+		return nil, err
+	}
+
+	vote := new(models.GameReviewVote)
+	if err := facades.UseDB().Debug().
+		Where("game_review_vote_user_id = ?", user.ID).
+		Where("game_review_vote_game_review_id = ?", review.ID).
+		First(vote).
+		Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+
+		return review, facades.UseDB().Debug().Create(&models.GameReviewVote{
+			GameReviewVoteGameReview: *review,
+			GameReviewVoteUser:       *user,
+			IsUpVote:                 false,
+		}).Error
+	}
+
+	if !vote.IsUpVote {
+		return review, facades.UseDB().Debug().Delete(vote).Error
+	}
+
+	vote.IsUpVote = !vote.IsUpVote
+	return review, facades.UseDB().Debug().Save(vote).Error
 }
 
 // GameReview returns generated.GameReviewResolver implementation.
