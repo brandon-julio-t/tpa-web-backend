@@ -26,7 +26,7 @@ func SeedGames() error {
 	}
 
 	return facades.UseDB().Transaction(func(tx *gorm.DB) error {
-		for i := 0; i < 30; i++ {
+		for i := 0; i < 50; i++ {
 			hoursPlayed, err := strconv.ParseFloat(faker.Number().Decimal(5, 2), 64)
 			if err != nil {
 				return err
@@ -47,9 +47,15 @@ func SeedGames() error {
 				return err
 			}
 
-			discount, err := strconv.ParseFloat(faker.Number().Decimal(3, 2), 64)
-			if err != nil {
-				return err
+			discount := float64(0)
+
+			if faker.Number().NumberInt(1) % 2 == 0 {
+				discf, err := strconv.ParseFloat(faker.Number().Between(1, 80), 64)
+				if err != nil {
+					return err
+				}
+
+				discount = discf / float64(100)
 			}
 
 			if err := tx.Create(&models.Game{

@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+// TODO: friend request
+
 type User struct {
 	ID                   int64  `gorm:"primaryKey"`
 	AccountName          string `gorm:"uniqueIndex"`

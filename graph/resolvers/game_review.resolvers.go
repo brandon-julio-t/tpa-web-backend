@@ -105,7 +105,7 @@ func (r *gameReviewResolver) UpVoters(ctx context.Context, obj *models.GameRevie
 		Where("grv.game_review_vote_game_review_id = ?", obj.ID).
 		Find(&users).
 		Error; err != nil {
-			return nil, err
+		return nil, err
 	}
 
 	return users, nil

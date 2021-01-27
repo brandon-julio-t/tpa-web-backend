@@ -183,6 +183,7 @@ type ComplexityRoot struct {
 	Query struct {
 		AllCountries                func(childComplexity int) int
 		Auth                        func(childComplexity int) int
+		CommunityRecommended        func(childComplexity int) int
 		FeaturedAndRecommendedGames func(childComplexity int) int
 		Games                       func(childComplexity int, page int64) int
 		Genres                      func(childComplexity int) int
@@ -196,6 +197,8 @@ type ComplexityRoot struct {
 		Promo                       func(childComplexity int, id int64) int
 		Promos                      func(childComplexity int, page int64) int
 		RefreshToken                func(childComplexity int) int
+		SearchGames                 func(childComplexity int, page int64, keyword string) int
+		SpecialOffersGame           func(childComplexity int) int
 		Streams                     func(childComplexity int) int
 		User                        func(childComplexity int, accountName string) int
 		Users                       func(childComplexity int, page int64) int
@@ -311,10 +314,13 @@ type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
+	CommunityRecommended(ctx context.Context) ([]*models.Game, error)
+	FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error)
 	Games(ctx context.Context, page int64) (*models.GamePagination, error)
 	Genres(ctx context.Context) ([]*models.GameGenre, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
-	FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error)
+	SearchGames(ctx context.Context, page int64, keyword string) (*models.GamePagination, error)
+	SpecialOffersGame(ctx context.Context) ([]*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
 	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
@@ -1184,6 +1190,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Auth(childComplexity), true
 
+	case "Query.communityRecommended":
+		if e.complexity.Query.CommunityRecommended == nil {
+			break
+		}
+
+		return e.complexity.Query.CommunityRecommended(childComplexity), true
+
 	case "Query.featuredAndRecommendedGames":
 		if e.complexity.Query.FeaturedAndRecommendedGames == nil {
 			break
@@ -1314,6 +1327,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.RefreshToken(childComplexity), true
+
+	case "Query.searchGames":
+		if e.complexity.Query.SearchGames == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchGames_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchGames(childComplexity, args["page"].(int64), args["keyword"].(string)), true
+
+	case "Query.specialOffersGame":
+		if e.complexity.Query.SpecialOffersGame == nil {
+			break
+		}
+
+		return e.complexity.Query.SpecialOffersGame(childComplexity), true
 
 	case "Query.streams":
 		if e.complexity.Query.Streams == nil {
@@ -1722,10 +1754,13 @@ type GameGenre {
 }
 
 extend type Query {
+    communityRecommended: [Game!]!
+    featuredAndRecommendedGames: [Game!]!
     games(page: Int!): GamePagination!
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
-    featuredAndRecommendedGames: [Game!]!
+    searchGames(page: Int!, keyword: String!): GamePagination!
+    specialOffersGame: [Game!]!
 }
 
 extend type Mutation {
@@ -2747,6 +2782,30 @@ func (ec *executionContext) field_Query_promos_args(ctx context.Context, rawArgs
 		}
 	}
 	args["page"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchGames_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["keyword"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyword"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["keyword"] = arg1
 	return args, nil
 }
 
@@ -6365,6 +6424,76 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_communityRecommended(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CommunityRecommended(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_featuredAndRecommendedGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().FeaturedAndRecommendedGames(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_games(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6484,7 +6613,49 @@ func (ec *executionContext) _Query_getGameById(ctx context.Context, field graphq
 	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_featuredAndRecommendedGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_searchGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_searchGames_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchGames(rctx, args["page"].(int64), args["keyword"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.GamePagination)
+	fc.Result = res
+	return ec.marshalNGamePagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGamePagination(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_specialOffersGame(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6502,7 +6673,7 @@ func (ec *executionContext) _Query_featuredAndRecommendedGames(ctx context.Conte
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().FeaturedAndRecommendedGames(rctx)
+		return ec.resolvers.Query().SpecialOffersGame(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10378,6 +10549,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "communityRecommended":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_communityRecommended(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "featuredAndRecommendedGames":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_featuredAndRecommendedGames(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "games":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -10420,7 +10619,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "featuredAndRecommendedGames":
+		case "searchGames":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -10428,7 +10627,21 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_featuredAndRecommendedGames(ctx, field)
+				res = ec._Query_searchGames(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "specialOffersGame":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_specialOffersGame(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

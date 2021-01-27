@@ -31,10 +31,13 @@ type GameGenre {
 }
 
 extend type Query {
+    communityRecommended: [Game!]!
+    featuredAndRecommendedGames: [Game!]!
     games(page: Int!): GamePagination!
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
-    featuredAndRecommendedGames: [Game!]!
+    searchGames(page: Int!, keyword: String!): GamePagination!
+    specialOffersGame: [Game!]!
 }
 
 extend type Mutation {

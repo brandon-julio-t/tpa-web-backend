@@ -4,6 +4,9 @@ import (
 	"time"
 )
 
+// TODO: developer
+// TODO: publisher
+
 type Game struct {
 	ID                 int64 `gorm:"primaryKey;autoIncrement:true"`
 	Banner             AssetFile
