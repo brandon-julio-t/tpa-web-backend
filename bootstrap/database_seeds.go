@@ -18,6 +18,8 @@ func init() {
 			database_seeds.SeedTopUpCodes,
 			database_seeds.SeedGames,
 			database_seeds.SeedGameReviewVotes,
+			database_seeds.SeedGamePurchaseTransactions,
+			database_seeds.SeedGameGiftTransactions,
 		} {
 			if err := seed(); err != nil {
 				return err

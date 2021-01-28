@@ -49,7 +49,7 @@ func SeedGames() error {
 
 			discount := float64(0)
 
-			if faker.Number().NumberInt(1) % 2 == 0 {
+			if faker.Number().NumberInt(1)%2 == 0 {
 				discf, err := strconv.ParseFloat(faker.Number().Between(1, 80), 64)
 				if err != nil {
 					return err
@@ -60,7 +60,7 @@ func SeedGames() error {
 
 			if err := tx.Create(&models.Game{
 				Banner:          models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-				CreatedAt:       time.Time{},
+				CreatedAt:       faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 				Description:     faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 				Discount:        discount,
 				GameTags:        tags,
@@ -72,26 +72,31 @@ func SeedGames() error {
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 				},

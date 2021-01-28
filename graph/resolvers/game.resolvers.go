@@ -120,6 +120,15 @@ func (r *queryResolver) GetGameByID(ctx context.Context, id int64) (*models.Game
 	return new(repositories.GameRepository).GetById(id)
 }
 
+func (r *queryResolver) NewAndTrending(ctx context.Context) ([]*models.Game, error) {
+	games := make([]*models.Game, 0)
+	return games, facades.UseDB().
+		Order("created_at desc").
+		Limit(10).
+		Find(&games).
+		Error
+}
+
 func (r *queryResolver) SearchGames(ctx context.Context, page int64, keyword string) (*models.GamePagination, error) {
 	games := make([]*models.Game, 0)
 	total := new(int64)
@@ -154,6 +163,45 @@ func (r *queryResolver) SpecialOffersGame(ctx context.Context) ([]*models.Game, 
 		Where("discount > 0").
 		Order("discount desc").
 		Limit(24).
+		Find(&games).
+		Error
+}
+
+func (r *queryResolver) Specials(ctx context.Context) ([]*models.Game, error) {
+	games := make([]*models.Game, 0)
+	return games, facades.UseDB().
+		Where("discount >= ?", 0.5).
+		Order("discount desc").
+		Limit(10).
+		Find(&games).
+		Error
+}
+
+func (r *queryResolver) TopSellers(ctx context.Context) ([]*models.Game, error) {
+	games := make([]*models.Game, 0)
+	aWeekAgo := time.Now().AddDate(0, 0, -7)
+
+	return games, facades.UseDB().
+		Joins(
+			"join (?) as purchases on games.id = purchases.game_id",
+			facades.UseDB().
+				Model(new(models.GamePurchaseTransactionHeader)).
+				Select("gptd.game_purchase_transaction_detail_game_id as game_id, count(gptd.game_purchase_transaction_header_id) as total_purchases").
+				Joins("join game_purchase_transaction_details gptd on game_purchase_transaction_headers.id = gptd.game_purchase_transaction_header_id").
+				Where("game_purchase_transaction_headers.created_at >= ?", aWeekAgo).
+				Group("gptd.game_purchase_transaction_detail_game_id"),
+		).
+		Joins(
+			"join (?) as gifts on games.id = gifts.game_id",
+			facades.UseDB().
+				Model(new(models.GameGiftTransactionHeader)).
+				Select("ggtd.game_gift_transaction_detail_game_id as game_id, count(ggtd.game_gift_transaction_header_id) as total_gifts").
+				Joins("join game_gift_transaction_details ggtd on game_gift_transaction_headers.id = ggtd.game_gift_transaction_header_id").
+				Where("game_gift_transaction_headers.created_at >= ?", aWeekAgo).
+				Group("ggtd.game_gift_transaction_detail_game_id"),
+		).
+		Order("total_purchases + total_gifts desc").
+		Limit(10).
 		Find(&games).
 		Error
 }

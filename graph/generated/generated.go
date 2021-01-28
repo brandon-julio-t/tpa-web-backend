@@ -192,6 +192,7 @@ type ComplexityRoot struct {
 		GetGameByID                 func(childComplexity int, id int64) int
 		GetProfile                  func(childComplexity int, customURL string) int
 		GetReportsByUser            func(childComplexity int, id int64) int
+		NewAndTrending              func(childComplexity int) int
 		PrivateMessage              func(childComplexity int, friendID int64) int
 		ProfileComments             func(childComplexity int, profileID int64) int
 		Promo                       func(childComplexity int, id int64) int
@@ -199,7 +200,9 @@ type ComplexityRoot struct {
 		RefreshToken                func(childComplexity int) int
 		SearchGames                 func(childComplexity int, page int64, keyword string) int
 		SpecialOffersGame           func(childComplexity int) int
+		Specials                    func(childComplexity int) int
 		Streams                     func(childComplexity int) int
+		TopSellers                  func(childComplexity int) int
 		User                        func(childComplexity int, accountName string) int
 		Users                       func(childComplexity int, page int64) int
 	}
@@ -319,8 +322,11 @@ type QueryResolver interface {
 	Games(ctx context.Context, page int64) (*models.GamePagination, error)
 	Genres(ctx context.Context) ([]*models.GameGenre, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
+	NewAndTrending(ctx context.Context) ([]*models.Game, error)
 	SearchGames(ctx context.Context, page int64, keyword string) (*models.GamePagination, error)
 	SpecialOffersGame(ctx context.Context) ([]*models.Game, error)
+	Specials(ctx context.Context) ([]*models.Game, error)
+	TopSellers(ctx context.Context) ([]*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
 	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
@@ -1273,6 +1279,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetReportsByUser(childComplexity, args["id"].(int64)), true
 
+	case "Query.newAndTrending":
+		if e.complexity.Query.NewAndTrending == nil {
+			break
+		}
+
+		return e.complexity.Query.NewAndTrending(childComplexity), true
+
 	case "Query.privateMessage":
 		if e.complexity.Query.PrivateMessage == nil {
 			break
@@ -1347,12 +1360,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SpecialOffersGame(childComplexity), true
 
+	case "Query.specials":
+		if e.complexity.Query.Specials == nil {
+			break
+		}
+
+		return e.complexity.Query.Specials(childComplexity), true
+
 	case "Query.streams":
 		if e.complexity.Query.Streams == nil {
 			break
 		}
 
 		return e.complexity.Query.Streams(childComplexity), true
+
+	case "Query.topSellers":
+		if e.complexity.Query.TopSellers == nil {
+			break
+		}
+
+		return e.complexity.Query.TopSellers(childComplexity), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -1759,8 +1786,11 @@ extend type Query {
     games(page: Int!): GamePagination!
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
+    newAndTrending: [Game!]!
     searchGames(page: Int!, keyword: String!): GamePagination!
     specialOffersGame: [Game!]!
+    specials: [Game!]!
+    topSellers: [Game!]!
 }
 
 extend type Mutation {
@@ -6613,6 +6643,41 @@ func (ec *executionContext) _Query_getGameById(ctx context.Context, field graphq
 	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_newAndTrending(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().NewAndTrending(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_searchGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6674,6 +6739,76 @@ func (ec *executionContext) _Query_specialOffersGame(ctx context.Context, field 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().SpecialOffersGame(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_specials(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Specials(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_topSellers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().TopSellers(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10619,6 +10754,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "newAndTrending":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_newAndTrending(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "searchGames":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -10642,6 +10791,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_specialOffersGame(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "specials":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_specials(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "topSellers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_topSellers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

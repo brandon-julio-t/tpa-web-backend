@@ -36,8 +36,11 @@ extend type Query {
     games(page: Int!): GamePagination!
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
+    newAndTrending: [Game!]!
     searchGames(page: Int!, keyword: String!): GamePagination!
     specialOffersGame: [Game!]!
+    specials: [Game!]!
+    topSellers: [Game!]!
 }
 
 extend type Mutation {
