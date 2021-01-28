@@ -2,26 +2,24 @@ package facades
 
 import (
 	"github.com/go-redis/redis/v8"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
 
 var redisInstance redis.UniversalClient
 
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Print(err)
-	}
+func getCache() redis.UniversalClient {
+	if redisInstance == nil {
+		option, err := redis.ParseURL(os.Getenv("REDIS_URL"))
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	option, err := redis.ParseURL(os.Getenv("REDIS_URL"))
-	if err != nil {
-		log.Fatal(err)
+		redisInstance = redis.NewClient(option)
 	}
-
-	redisInstance = redis.NewClient(option)
+	return redisInstance
 }
 
 func UseCache() redis.UniversalClient {
-	return redisInstance
+	return getCache()
 }

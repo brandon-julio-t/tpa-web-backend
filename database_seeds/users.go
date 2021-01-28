@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm/clause"
 	"io/ioutil"
 	"path/filepath"
+	"syreclabs.com/go/faker"
 )
 
 func SeedUsers() error {
@@ -30,6 +31,7 @@ func SeedUsers() error {
 			File:        defaultProfilePicture,
 			ContentType: "image/png",
 		},
+		Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 		WalletBalance: 100000,
 	})
 
@@ -48,6 +50,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -59,6 +62,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -70,6 +74,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -81,6 +86,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -92,6 +98,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -103,6 +110,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -114,6 +122,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -125,6 +134,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -136,6 +146,7 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
 		},
 		{
@@ -147,8 +158,9 @@ func SeedUsers() error {
 				File:        defaultProfilePicture,
 				ContentType: "image/png",
 			},
+			Summary:       faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			WalletBalance: 100000,
-		},	
+		},
 	}
 
 	for _, user := range users {
@@ -156,8 +168,10 @@ func SeedUsers() error {
 	}
 
 	for _, user := range users {
+		count := 0
+
 		for _, friend := range users {
-			if user.ID == friend.ID {
+			if count > 4 || user.ID == friend.ID {
 				continue
 			}
 
@@ -169,6 +183,8 @@ func SeedUsers() error {
 			}).Error; err != nil {
 				return err
 			}
+
+			count++
 		}
 	}
 

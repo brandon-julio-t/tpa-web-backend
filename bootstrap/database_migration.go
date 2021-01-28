@@ -12,6 +12,7 @@ func init() {
 		Exec("drop table if exists friends cascade").
 		Exec("drop table if exists wishlist cascade").
 		Exec("drop table if exists cart cascade").
+		Exec("drop table if exists friend_requests cascade").
 		Error; err != nil {
 		log.Fatal(err)
 	}
@@ -34,8 +35,10 @@ func init() {
 
 		new(models.User),
 		new(models.Friendship),
+		new(models.FriendRequest),
 		new(models.PrivateMessage),
 		new(models.ProfileComment),
+		new(models.Notification),
 
 		new(models.GamePurchaseTransactionHeader),
 		new(models.GamePurchaseTransactionDetail),
@@ -63,8 +66,10 @@ func init() {
 
 		new(models.User),
 		new(models.Friendship),
+		new(models.FriendRequest),
 		new(models.PrivateMessage),
 		new(models.ProfileComment),
+		new(models.Notification),
 
 		new(models.GamePurchaseTransactionHeader),
 		new(models.GamePurchaseTransactionDetail),

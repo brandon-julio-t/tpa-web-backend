@@ -16,6 +16,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"strconv"
@@ -23,6 +24,10 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Print(err)
+	}
+
 	r := gin.Default()
 
 	r.Use(

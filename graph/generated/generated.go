@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	FriendRequest() FriendRequestResolver
 	Game() GameResolver
 	GameReview() GameReviewResolver
 	GameSlideshow() GameSlideshowResolver
@@ -58,6 +59,13 @@ type ComplexityRoot struct {
 	Country struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
+	}
+
+	FriendRequest struct {
+		CreatedAt func(childComplexity int) int
+		Friend    func(childComplexity int) int
+		ID        func(childComplexity int) int
+		User      func(childComplexity int) int
 	}
 
 	Game struct {
@@ -112,11 +120,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		AcceptFriendRequest      func(childComplexity int, userID int64) int
 		AddPrivateMessage        func(childComplexity int, friendID int64, text string) int
 		AddToCart                func(childComplexity int, gameID int64) int
 		AddToWishlist            func(childComplexity int, gameID int64) int
 		ApproveUnsuspendRequests func(childComplexity int, id int64) int
-		Befriend                 func(childComplexity int, userID int64) int
 		CheckoutWithCard         func(childComplexity int) int
 		CheckoutWithWallet       func(childComplexity int) int
 		ClearCart                func(childComplexity int) int
@@ -125,6 +133,7 @@ type ComplexityRoot struct {
 		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
 		CreateReview             func(childComplexity int, gameID int64, content string, isRecommended bool) int
 		DeleteGame               func(childComplexity int, id int64) int
+		DeleteNotification       func(childComplexity int, id int64) int
 		DeleteProfileComment     func(childComplexity int, id int64) int
 		DeletePromo              func(childComplexity int, id int64) int
 		DeleteReview             func(childComplexity int, id int64) int
@@ -138,20 +147,27 @@ type ComplexityRoot struct {
 		NewIceCandidate          func(childComplexity int, accountName string, candidate string) int
 		RedeemWallet             func(childComplexity int, code string) int
 		Register                 func(childComplexity int, accountName string, email string, password string, countryID int64) int
+		RejectFriendRequest      func(childComplexity int, userID int64) int
 		RemoveFromCart           func(childComplexity int, gameID int64) int
 		RemoveFromWishlist       func(childComplexity int, gameID int64) int
+		SendFriendRequest        func(childComplexity int, userID int64) int
 		SendOtp                  func(childComplexity int, email string) int
 		StartStreaming           func(childComplexity int, rtcConnection string) int
 		StopStreaming            func(childComplexity int) int
 		SubmitReport             func(childComplexity int, userID int64, description string) int
 		SuspendAccount           func(childComplexity int, id int64) int
-		Unfriend                 func(childComplexity int, userID int64) int
 		UnsuspendRequest         func(childComplexity int, accountName string) int
 		UpVoteReview             func(childComplexity int, id int64) int
 		UpdateGame               func(childComplexity int, input models.UpdateGame) int
 		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
 		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
 		VerifyOtp                func(childComplexity int, otp string) int
+	}
+
+	Notification struct {
+		Content   func(childComplexity int) int
+		CreatedAt func(childComplexity int) int
+		ID        func(childComplexity int) int
 	}
 
 	PrivateMessage struct {
@@ -193,6 +209,7 @@ type ComplexityRoot struct {
 		GetProfile                  func(childComplexity int, customURL string) int
 		GetReportsByUser            func(childComplexity int, id int64) int
 		NewAndTrending              func(childComplexity int) int
+		NotificationByID            func(childComplexity int, id int64) int
 		PrivateMessage              func(childComplexity int, friendID int64) int
 		ProfileComments             func(childComplexity int, profileID int64) int
 		Promo                       func(childComplexity int, id int64) int
@@ -204,6 +221,7 @@ type ComplexityRoot struct {
 		Streams                     func(childComplexity int) int
 		TopSellers                  func(childComplexity int) int
 		User                        func(childComplexity int, accountName string) int
+		UserByFriendCode            func(childComplexity int, code string) int
 		Users                       func(childComplexity int, page int64) int
 	}
 
@@ -222,25 +240,29 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AccountName    func(childComplexity int) int
-		Cart           func(childComplexity int) int
-		CartCount      func(childComplexity int) int
-		Country        func(childComplexity int) int
-		CustomURL      func(childComplexity int) int
-		DisplayName    func(childComplexity int) int
-		Email          func(childComplexity int) int
-		Friends        func(childComplexity int) int
-		ID             func(childComplexity int) int
-		ProfilePicture func(childComplexity int) int
-		ProfileTheme   func(childComplexity int) int
-		RealName       func(childComplexity int) int
-		ReportCounts   func(childComplexity int) int
-		Stream         func(childComplexity int) int
-		Summary        func(childComplexity int) int
-		SuspendedAt    func(childComplexity int) int
-		WalletBalance  func(childComplexity int) int
-		Wishlist       func(childComplexity int) int
-		WishlistCount  func(childComplexity int) int
+		AccountName            func(childComplexity int) int
+		Cart                   func(childComplexity int) int
+		CartCount              func(childComplexity int) int
+		Country                func(childComplexity int) int
+		CustomURL              func(childComplexity int) int
+		DisplayName            func(childComplexity int) int
+		Email                  func(childComplexity int) int
+		FriendCode             func(childComplexity int) int
+		Friends                func(childComplexity int) int
+		ID                     func(childComplexity int) int
+		IngoingFriendRequests  func(childComplexity int) int
+		Notification           func(childComplexity int) int
+		OutgoingFriendRequests func(childComplexity int) int
+		ProfilePicture         func(childComplexity int) int
+		ProfileTheme           func(childComplexity int) int
+		RealName               func(childComplexity int) int
+		ReportCounts           func(childComplexity int) int
+		Stream                 func(childComplexity int) int
+		Summary                func(childComplexity int) int
+		SuspendedAt            func(childComplexity int) int
+		WalletBalance          func(childComplexity int) int
+		Wishlist               func(childComplexity int) int
+		WishlistCount          func(childComplexity int) int
 	}
 
 	UserPagination struct {
@@ -249,6 +271,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type FriendRequestResolver interface {
+	User(ctx context.Context, obj *models.FriendRequest) (*models.User, error)
+	Friend(ctx context.Context, obj *models.FriendRequest) (*models.User, error)
+}
 type GameResolver interface {
 	IsInCart(ctx context.Context, obj *models.Game) (bool, error)
 	IsInWishlist(ctx context.Context, obj *models.Game) (bool, error)
@@ -281,8 +307,9 @@ type MutationResolver interface {
 	CheckoutWithCard(ctx context.Context) (float64, error)
 	GiftWithWallet(ctx context.Context, input models.Gift) (float64, error)
 	GiftWithCard(ctx context.Context, input models.Gift) (float64, error)
-	Befriend(ctx context.Context, userID int64) (*models.User, error)
-	Unfriend(ctx context.Context, userID int64) (*models.User, error)
+	SendFriendRequest(ctx context.Context, userID int64) (*models.User, error)
+	AcceptFriendRequest(ctx context.Context, userID int64) (*models.User, error)
+	RejectFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error)
 	UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error)
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
@@ -290,6 +317,7 @@ type MutationResolver interface {
 	DeleteReview(ctx context.Context, id int64) (*models.GameReview, error)
 	UpVoteReview(ctx context.Context, id int64) (*models.GameReview, error)
 	DownVoteReview(ctx context.Context, id int64) (*models.GameReview, error)
+	DeleteNotification(ctx context.Context, id int64) (*models.Notification, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
@@ -317,6 +345,7 @@ type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
+	UserByFriendCode(ctx context.Context, code string) (*models.User, error)
 	CommunityRecommended(ctx context.Context) ([]*models.Game, error)
 	FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error)
 	Games(ctx context.Context, page int64) (*models.GamePagination, error)
@@ -328,6 +357,7 @@ type QueryResolver interface {
 	Specials(ctx context.Context) ([]*models.Game, error)
 	TopSellers(ctx context.Context) ([]*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
+	NotificationByID(ctx context.Context, id int64) (*models.Notification, error)
 	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
 	Promos(ctx context.Context, page int64) (*models.PromoPagination, error)
@@ -352,6 +382,10 @@ type UserResolver interface {
 	Cart(ctx context.Context, obj *models.User) ([]*models.Game, error)
 	CartCount(ctx context.Context, obj *models.User) (int64, error)
 	Friends(ctx context.Context, obj *models.User) ([]*models.User, error)
+
+	OutgoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
+	IngoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
+	Notification(ctx context.Context, obj *models.User) ([]*models.Notification, error)
 	Stream(ctx context.Context, obj *models.User) (string, error)
 }
 
@@ -397,6 +431,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Country.Name(childComplexity), true
+
+	case "FriendRequest.createdAt":
+		if e.complexity.FriendRequest.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.CreatedAt(childComplexity), true
+
+	case "FriendRequest.friend":
+		if e.complexity.FriendRequest.Friend == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.Friend(childComplexity), true
+
+	case "FriendRequest.id":
+		if e.complexity.FriendRequest.ID == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.ID(childComplexity), true
+
+	case "FriendRequest.user":
+		if e.complexity.FriendRequest.User == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.User(childComplexity), true
 
 	case "Game.banner":
 		if e.complexity.Game.Banner == nil {
@@ -629,6 +691,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GameTag.Name(childComplexity), true
 
+	case "Mutation.acceptFriendRequest":
+		if e.complexity.Mutation.AcceptFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_acceptFriendRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AcceptFriendRequest(childComplexity, args["userId"].(int64)), true
+
 	case "Mutation.addPrivateMessage":
 		if e.complexity.Mutation.AddPrivateMessage == nil {
 			break
@@ -676,18 +750,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ApproveUnsuspendRequests(childComplexity, args["id"].(int64)), true
-
-	case "Mutation.befriend":
-		if e.complexity.Mutation.Befriend == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_befriend_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Befriend(childComplexity, args["userId"].(int64)), true
 
 	case "Mutation.checkoutWithCard":
 		if e.complexity.Mutation.CheckoutWithCard == nil {
@@ -769,6 +831,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DeleteGame(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.deleteNotification":
+		if e.complexity.Mutation.DeleteNotification == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteNotification_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteNotification(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.deleteProfileComment":
 		if e.complexity.Mutation.DeleteProfileComment == nil {
@@ -921,6 +995,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Register(childComplexity, args["accountName"].(string), args["email"].(string), args["password"].(string), args["countryId"].(int64)), true
 
+	case "Mutation.rejectFriendRequest":
+		if e.complexity.Mutation.RejectFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_rejectFriendRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RejectFriendRequest(childComplexity, args["userId"].(int64)), true
+
 	case "Mutation.removeFromCart":
 		if e.complexity.Mutation.RemoveFromCart == nil {
 			break
@@ -944,6 +1030,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RemoveFromWishlist(childComplexity, args["gameId"].(int64)), true
+
+	case "Mutation.sendFriendRequest":
+		if e.complexity.Mutation.SendFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_sendFriendRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SendFriendRequest(childComplexity, args["userId"].(int64)), true
 
 	case "Mutation.sendOTP":
 		if e.complexity.Mutation.SendOtp == nil {
@@ -999,18 +1097,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SuspendAccount(childComplexity, args["id"].(int64)), true
-
-	case "Mutation.unfriend":
-		if e.complexity.Mutation.Unfriend == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_unfriend_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Unfriend(childComplexity, args["userId"].(int64)), true
 
 	case "Mutation.unsuspendRequest":
 		if e.complexity.Mutation.UnsuspendRequest == nil {
@@ -1083,6 +1169,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.VerifyOtp(childComplexity, args["otp"].(string)), true
+
+	case "Notification.content":
+		if e.complexity.Notification.Content == nil {
+			break
+		}
+
+		return e.complexity.Notification.Content(childComplexity), true
+
+	case "Notification.createdAt":
+		if e.complexity.Notification.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Notification.CreatedAt(childComplexity), true
+
+	case "Notification.id":
+		if e.complexity.Notification.ID == nil {
+			break
+		}
+
+		return e.complexity.Notification.ID(childComplexity), true
 
 	case "PrivateMessage.createdAt":
 		if e.complexity.PrivateMessage.CreatedAt == nil {
@@ -1286,6 +1393,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.NewAndTrending(childComplexity), true
 
+	case "Query.notificationById":
+		if e.complexity.Query.NotificationByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_notificationById_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.NotificationByID(childComplexity, args["id"].(int64)), true
+
 	case "Query.privateMessage":
 		if e.complexity.Query.PrivateMessage == nil {
 			break
@@ -1392,6 +1511,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.User(childComplexity, args["accountName"].(string)), true
+
+	case "Query.userByFriendCode":
+		if e.complexity.Query.UserByFriendCode == nil {
+			break
+		}
+
+		args, err := ec.field_Query_userByFriendCode_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.UserByFriendCode(childComplexity, args["code"].(string)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -1515,6 +1646,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Email(childComplexity), true
 
+	case "User.friendCode":
+		if e.complexity.User.FriendCode == nil {
+			break
+		}
+
+		return e.complexity.User.FriendCode(childComplexity), true
+
 	case "User.friends":
 		if e.complexity.User.Friends == nil {
 			break
@@ -1528,6 +1666,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
+
+	case "User.ingoingFriendRequests":
+		if e.complexity.User.IngoingFriendRequests == nil {
+			break
+		}
+
+		return e.complexity.User.IngoingFriendRequests(childComplexity), true
+
+	case "User.notification":
+		if e.complexity.User.Notification == nil {
+			break
+		}
+
+		return e.complexity.User.Notification(childComplexity), true
+
+	case "User.outgoingFriendRequests":
+		if e.complexity.User.OutgoingFriendRequests == nil {
+			break
+		}
+
+		return e.complexity.User.OutgoingFriendRequests(childComplexity), true
 
 	case "User.profilePicture":
 		if e.complexity.User.ProfilePicture == nil {
@@ -1739,13 +1898,28 @@ extend type Query {
     allCountries: [Country!]!
 }
 `, BuiltIn: false},
-	{Name: "graph/schemas/friend.graphqls", Input: `extend type User {
+	{Name: "graph/schemas/friend.graphqls", Input: `type FriendRequest {
+    id: ID!
+    user: User!
+    friend: User!
+    createdAt: Time!
+}
+
+extend type User {
     friends: [User!]!
+    friendCode: String!
+    outgoingFriendRequests: [User!]!
+    ingoingFriendRequests: [User!]!
+}
+
+extend type Query {
+    userByFriendCode(code: String!): User!
 }
 
 extend type Mutation {
-    befriend(userId: ID!): User!
-    unfriend(userId: ID!): User!
+    sendFriendRequest(userId: ID!): User!
+    acceptFriendRequest(userId: ID!): User!
+    rejectFriendRequest(userId: ID!): User!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/game.graphqls", Input: `type Game {
@@ -1856,6 +2030,24 @@ extend type Mutation {
 extend type Query {
     getAllGameTags: [GameTag!]!
 }`, BuiltIn: false},
+	{Name: "graph/schemas/notification.graphqls", Input: `type Notification {
+    id: ID!
+    content: String!
+    createdAt: Time!
+}
+
+extend type User {
+    notification: [Notification!]!
+}
+
+extend type Query {
+    notificationById(id: ID!): Notification!
+}
+
+extend type Mutation {
+    deleteNotification(id: ID!): Notification!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/otp.graphqls", Input: `extend type Mutation {
     sendOTP(email: String!): Boolean!
     verifyOTP(otp: String!): Boolean!
@@ -2029,6 +2221,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_acceptFriendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addPrivateMessage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2095,21 +2302,6 @@ func (ec *executionContext) field_Mutation_approveUnsuspendRequests_args(ctx con
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_befriend_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int64
-	if tmp, ok := rawArgs["userId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg0
 	return args, nil
 }
 
@@ -2210,6 +2402,21 @@ func (ec *executionContext) field_Mutation_createReview_args(ctx context.Context
 }
 
 func (ec *executionContext) field_Mutation_deleteGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteNotification_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -2458,6 +2665,21 @@ func (ec *executionContext) field_Mutation_register_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_rejectFriendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_removeFromCart_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2485,6 +2707,21 @@ func (ec *executionContext) field_Mutation_removeFromWishlist_args(ctx context.C
 		}
 	}
 	args["gameId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_sendFriendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -2554,21 +2791,6 @@ func (ec *executionContext) field_Mutation_suspendAccount_args(ctx context.Conte
 		}
 	}
 	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_unfriend_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int64
-	if tmp, ok := rawArgs["userId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg0
 	return args, nil
 }
 
@@ -2755,6 +2977,21 @@ func (ec *executionContext) field_Query_getReportsByUser_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_notificationById_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_privateMessage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2836,6 +3073,21 @@ func (ec *executionContext) field_Query_searchGames_args(ctx context.Context, ra
 		}
 	}
 	args["keyword"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_userByFriendCode_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["code"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["code"] = arg0
 	return args, nil
 }
 
@@ -3060,6 +3312,146 @@ func (ec *executionContext) _Country_name(ctx context.Context, field graphql.Col
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FriendRequest_id(ctx context.Context, field graphql.CollectedField, obj *models.FriendRequest) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FriendRequest_user(ctx context.Context, field graphql.CollectedField, obj *models.FriendRequest) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.FriendRequest().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FriendRequest_friend(ctx context.Context, field graphql.CollectedField, obj *models.FriendRequest) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.FriendRequest().Friend(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FriendRequest_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.FriendRequest) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Game_id(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
@@ -4567,7 +4959,7 @@ func (ec *executionContext) _Mutation_giftWithCard(ctx context.Context, field gr
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_befriend(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_sendFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4584,7 +4976,7 @@ func (ec *executionContext) _Mutation_befriend(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_befriend_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_sendFriendRequest_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -4592,7 +4984,7 @@ func (ec *executionContext) _Mutation_befriend(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Befriend(rctx, args["userId"].(int64))
+		return ec.resolvers.Mutation().SendFriendRequest(rctx, args["userId"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4609,7 +5001,7 @@ func (ec *executionContext) _Mutation_befriend(ctx context.Context, field graphq
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_unfriend(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_acceptFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4626,7 +5018,7 @@ func (ec *executionContext) _Mutation_unfriend(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_unfriend_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_acceptFriendRequest_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -4634,7 +5026,49 @@ func (ec *executionContext) _Mutation_unfriend(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Unfriend(rctx, args["userId"].(int64))
+		return ec.resolvers.Mutation().AcceptFriendRequest(rctx, args["userId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_rejectFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_rejectFriendRequest_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RejectFriendRequest(rctx, args["userId"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4943,6 +5377,48 @@ func (ec *executionContext) _Mutation_downVoteReview(ctx context.Context, field 
 	res := resTmp.(*models.GameReview)
 	fc.Result = res
 	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteNotification(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteNotification_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteNotification(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_sendOTP(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5862,6 +6338,111 @@ func (ec *executionContext) _Mutation_removeFromWishlist(ctx context.Context, fi
 	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Notification_id(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Notification",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_content(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Notification",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Content, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Notification_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.Notification) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Notification",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PrivateMessage_id(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6454,6 +7035,48 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_userByFriendCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_userByFriendCode_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().UserByFriendCode(rctx, args["code"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_communityRecommended(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6858,6 +7481,48 @@ func (ec *executionContext) _Query_getAllGameTags(ctx context.Context, field gra
 	res := resTmp.([]*models.GameTag)
 	fc.Result = res
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_notificationById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_notificationById_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().NotificationByID(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_privateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8279,6 +8944,146 @@ func (ec *executionContext) _User_friends(ctx context.Context, field graphql.Col
 	res := resTmp.([]*models.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_friendCode(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FriendCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_outgoingFriendRequests(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().OutgoingFriendRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_ingoingFriendRequests(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().IngoingFriendRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_notification(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Notification(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Notification)
+	fc.Result = res
+	return ec.marshalNNotification2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotificationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_stream(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -9841,6 +10646,66 @@ func (ec *executionContext) _Country(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var friendRequestImplementors = []string{"FriendRequest"}
+
+func (ec *executionContext) _FriendRequest(ctx context.Context, sel ast.SelectionSet, obj *models.FriendRequest) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, friendRequestImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FriendRequest")
+		case "id":
+			out.Values[i] = ec._FriendRequest_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FriendRequest_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "friend":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FriendRequest_friend(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "createdAt":
+			out.Values[i] = ec._FriendRequest_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var gameImplementors = []string{"Game"}
 
 func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj *models.Game) graphql.Marshaler {
@@ -10306,13 +11171,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "befriend":
-			out.Values[i] = ec._Mutation_befriend(ctx, field)
+		case "sendFriendRequest":
+			out.Values[i] = ec._Mutation_sendFriendRequest(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "unfriend":
-			out.Values[i] = ec._Mutation_unfriend(ctx, field)
+		case "acceptFriendRequest":
+			out.Values[i] = ec._Mutation_acceptFriendRequest(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "rejectFriendRequest":
+			out.Values[i] = ec._Mutation_rejectFriendRequest(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -10348,6 +11218,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "downVoteReview":
 			out.Values[i] = ec._Mutation_downVoteReview(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteNotification":
+			out.Values[i] = ec._Mutation_deleteNotification(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -10458,6 +11333,43 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "removeFromWishlist":
 			out.Values[i] = ec._Mutation_removeFromWishlist(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var notificationImplementors = []string{"Notification"}
+
+func (ec *executionContext) _Notification(ctx context.Context, sel ast.SelectionSet, obj *models.Notification) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, notificationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Notification")
+		case "id":
+			out.Values[i] = ec._Notification_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "content":
+			out.Values[i] = ec._Notification_content(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Notification_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -10684,6 +11596,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "userByFriendCode":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_userByFriendCode(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "communityRecommended":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -10833,6 +11759,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_getAllGameTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "notificationById":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_notificationById(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -11220,6 +12160,53 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_friends(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "friendCode":
+			out.Values[i] = ec._User_friendCode(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "outgoingFriendRequests":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_outgoingFriendRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "ingoingFriendRequests":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ingoingFriendRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "notification":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_notification(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -11951,6 +12938,57 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNNotification2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v models.Notification) graphql.Marshaler {
+	return ec._Notification(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNNotification2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotificationᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Notification) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v *models.Notification) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Notification(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPrivateMessage2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx context.Context, sel ast.SelectionSet, v models.PrivateMessage) graphql.Marshaler {

@@ -1,7 +1,6 @@
 package facades
 
 import (
-	"github.com/joho/godotenv"
 	"github.com/mailjet/mailjet-apiv3-go"
 	"log"
 	"os"
@@ -13,14 +12,17 @@ type mail struct {
 
 var mailSingleton *mail
 
-func init() {
-	if err := godotenv.Load(); err != nil {
-		log.Print(err)
+func getMail() *mail {
+	if mailSingleton == nil {
+		mailSingleton = &mail{
+			Client: mailjet.NewMailjetClient(os.Getenv("MAILJET_PUBLIC_KEY"), os.Getenv("MAILJET_PRIVATE_KEY")),
+		}
 	}
+	return mailSingleton
+}
 
-	mailSingleton = &mail{
-		Client: mailjet.NewMailjetClient(os.Getenv("MAILJET_PUBLIC_KEY"), os.Getenv("MAILJET_PRIVATE_KEY")),
-	}
+func UseMail() *mail {
+	return getMail()
 }
 
 func (m mail) SendText(text, subject, id, recipientEmail string) error {
@@ -73,8 +75,4 @@ func (m mail) SendHTML(html, subject, id, recipientEmail string) error {
 
 	log.Print(result)
 	return err
-}
-
-func UseMail() *mail {
-	return mailSingleton
 }

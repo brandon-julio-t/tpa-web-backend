@@ -1,8 +1,23 @@
+type FriendRequest {
+    id: ID!
+    user: User!
+    friend: User!
+    createdAt: Time!
+}
+
 extend type User {
     friends: [User!]!
+    friendCode: String!
+    outgoingFriendRequests: [User!]!
+    ingoingFriendRequests: [User!]!
+}
+
+extend type Query {
+    userByFriendCode(code: String!): User!
 }
 
 extend type Mutation {
-    befriend(userId: ID!): User!
-    unfriend(userId: ID!): User!
+    sendFriendRequest(userId: ID!): User!
+    acceptFriendRequest(userId: ID!): User!
+    rejectFriendRequest(userId: ID!): User!
 }

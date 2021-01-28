@@ -1,0 +1,17 @@
+type Notification {
+    id: ID!
+    content: String!
+    createdAt: Time!
+}
+
+extend type User {
+    notification: [Notification!]!
+}
+
+extend type Query {
+    notificationById(id: ID!): Notification!
+}
+
+extend type Mutation {
+    deleteNotification(id: ID!): Notification!
+}

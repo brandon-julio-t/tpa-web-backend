@@ -11,10 +11,9 @@ import (
 	"log"
 	"path/filepath"
 	"strconv"
+	"syreclabs.com/go/faker"
 	"time"
 )
-
-// TODO: friend request
 
 type User struct {
 	ID                   int64  `gorm:"primaryKey"`
@@ -25,6 +24,7 @@ type User struct {
 	DisplayName          string
 	Email                string `gorm:"uniqueIndex"`
 	Friends              []*Friendship
+	FriendCode           string `gorm:"uniqueIndex"`
 	Password             string
 	UserProfilePictureID int64
 	UserProfilePicture   AssetFile
@@ -48,6 +48,7 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 	u.UserProfilePicture = AssetFile{File: defaultProfilePicture, ContentType: "image/png"}
 	u.DisplayName = u.AccountName
 	u.CustomURL = uuid.Must(uuid.NewRandom()).String()
+	u.FriendCode = faker.Numerify("#########")
 
 	return nil
 }
