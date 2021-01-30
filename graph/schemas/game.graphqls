@@ -37,7 +37,7 @@ extend type Query {
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
     newAndTrending: [Game!]!
-    searchGames(page: Int!, keyword: String!): GamePagination!
+    searchGames(page: Int!, keyword: String!, price: Int!, genres: [ID!]!, category: String!): GamePagination!
     specialOffersGame: [Game!]!
     specials: [Game!]!
     topSellers: [Game!]!

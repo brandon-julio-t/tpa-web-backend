@@ -215,7 +215,7 @@ type ComplexityRoot struct {
 		Promo                       func(childComplexity int, id int64) int
 		Promos                      func(childComplexity int, page int64) int
 		RefreshToken                func(childComplexity int) int
-		SearchGames                 func(childComplexity int, page int64, keyword string) int
+		SearchGames                 func(childComplexity int, page int64, keyword string, price int64, genres []int64, category string) int
 		SpecialOffersGame           func(childComplexity int) int
 		Specials                    func(childComplexity int) int
 		Streams                     func(childComplexity int) int
@@ -356,7 +356,7 @@ type QueryResolver interface {
 	Genres(ctx context.Context) ([]*models.GameGenre, error)
 	GetGameByID(ctx context.Context, id int64) (*models.Game, error)
 	NewAndTrending(ctx context.Context) ([]*models.Game, error)
-	SearchGames(ctx context.Context, page int64, keyword string) (*models.GamePagination, error)
+	SearchGames(ctx context.Context, page int64, keyword string, price int64, genres []int64, category string) (*models.GamePagination, error)
 	SpecialOffersGame(ctx context.Context) ([]*models.Game, error)
 	Specials(ctx context.Context) ([]*models.Game, error)
 	TopSellers(ctx context.Context) ([]*models.Game, error)
@@ -1478,7 +1478,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchGames(childComplexity, args["page"].(int64), args["keyword"].(string)), true
+		return e.complexity.Query.SearchGames(childComplexity, args["page"].(int64), args["keyword"].(string), args["price"].(int64), args["genres"].([]int64), args["category"].(string)), true
 
 	case "Query.specialOffersGame":
 		if e.complexity.Query.SpecialOffersGame == nil {
@@ -1997,7 +1997,7 @@ extend type Query {
     genres: [GameGenre!]!
     getGameById(id: ID!): Game!
     newAndTrending: [Game!]!
-    searchGames(page: Int!, keyword: String!): GamePagination!
+    searchGames(page: Int!, keyword: String!, price: Int!, genres: [ID!]!, category: String!): GamePagination!
     specialOffersGame: [Game!]!
     specials: [Game!]!
     topSellers: [Game!]!
@@ -3113,6 +3113,33 @@ func (ec *executionContext) field_Query_searchGames_args(ctx context.Context, ra
 		}
 	}
 	args["keyword"] = arg1
+	var arg2 int64
+	if tmp, ok := rawArgs["price"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+		arg2, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["price"] = arg2
+	var arg3 []int64
+	if tmp, ok := rawArgs["genres"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genres"))
+		arg3, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["genres"] = arg3
+	var arg4 string
+	if tmp, ok := rawArgs["category"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("category"))
+		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["category"] = arg4
 	return args, nil
 }
 
@@ -7366,7 +7393,7 @@ func (ec *executionContext) _Query_searchGames(ctx context.Context, field graphq
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SearchGames(rctx, args["page"].(int64), args["keyword"].(string))
+		return ec.resolvers.Query().SearchGames(rctx, args["page"].(int64), args["keyword"].(string), args["price"].(int64), args["genres"].([]int64), args["category"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

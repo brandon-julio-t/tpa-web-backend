@@ -7,7 +7,6 @@ import (
 	"context"
 	"math"
 	"strings"
-	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
@@ -42,85 +41,60 @@ func (r *gameResolver) IsInWishlist(ctx context.Context, obj *models.Game) (bool
 		Count() > 0, nil
 }
 
-func (r *gameResolver) Slideshows(ctx context.Context, obj *models.Game) ([]*models.GameSlideshow, error) {
+func (r *gameResolver) Slideshows(_ context.Context, obj *models.Game) ([]*models.GameSlideshow, error) {
 	return obj.GameSlideshows, facades.UseDB().
 		Preload("GameSlideshows.GameSlideshowFile").
 		First(obj).
 		Error
 }
 
-func (r *gameResolver) Tags(ctx context.Context, obj *models.Game) ([]*models.GameTag, error) {
+func (r *gameResolver) Tags(_ context.Context, obj *models.Game) ([]*models.GameTag, error) {
 	return obj.GameTags, nil
 }
 
-func (r *gameSlideshowResolver) File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error) {
+func (r *gameSlideshowResolver) File(_ context.Context, obj *models.GameSlideshow) (*models.AssetFile, error) {
 	return &obj.GameSlideshowFile, facades.UseDB().First(obj).Error
 }
 
-func (r *mutationResolver) CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error) {
+func (r *mutationResolver) CreateGame(_ context.Context, input models.CreateGame) (*models.Game, error) {
 	return new(repositories.GameRepository).Create(input)
 }
 
-func (r *mutationResolver) UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error) {
+func (r *mutationResolver) UpdateGame(_ context.Context, input models.UpdateGame) (*models.Game, error) {
 	return new(repositories.GameRepository).Update(input)
 }
 
-func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Game, error) {
+func (r *mutationResolver) DeleteGame(_ context.Context, id int64) (*models.Game, error) {
 	return new(repositories.GameRepository).Delete(id)
 }
 
-func (r *queryResolver) CommunityRecommended(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) CommunityRecommended(context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
-	now := time.Now()
-	aWeekAgo := now.AddDate(0, 0, -7)
-
-	return games, facades.UseDB().
-		Joins(
-			"join (?) as recommended_games on games.id = recommended_games.id",
-			facades.UseDB().
-				Select("g.id, count(game_reviews.id) as recommendations_count").
-				Model(new(models.GameReview)).
-				Joins("join games g on game_reviews.game_review_game_id = g.id").
-				Where("is_recommended = ?", true).
-				Where("game_reviews.created_at >= ?", aWeekAgo).
-				Where("game_reviews.created_at <= ?", now).
-				Group("g.id"),
-		).
-		Joins(
-			"join (?) as unrecommended_games on games.id = unrecommended_games.id",
-			facades.UseDB().
-				Select("g.id, count(game_reviews.id) as recommendations_count").
-				Model(new(models.GameReview)).
-				Joins("join games g on game_reviews.game_review_game_id = g.id").
-				Where("is_recommended = ?", false).
-				Where("game_reviews.created_at >= ?", aWeekAgo).
-				Where("game_reviews.created_at <= ?", now).
-				Group("g.id"),
-		).
-		Order("recommended_games.recommendations_count - unrecommended_games.recommendations_count desc").
+	return games, new(repositories.GameRepository).
+		GetCommunityRecommends().
 		Limit(12).
 		Find(&games).
 		Error
 }
 
-func (r *queryResolver) FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) FeaturedAndRecommendedGames(context.Context) ([]*models.Game, error) {
 	return new(repositories.GameRepository).GetFeaturedAndRecommendedGames()
 }
 
-func (r *queryResolver) Games(ctx context.Context, page int64) (*models.GamePagination, error) {
+func (r *queryResolver) Games(_ context.Context, page int64) (*models.GamePagination, error) {
 	return new(repositories.GameRepository).GetAll(int(page))
 }
 
-func (r *queryResolver) Genres(ctx context.Context) ([]*models.GameGenre, error) {
+func (r *queryResolver) Genres(context.Context) ([]*models.GameGenre, error) {
 	var genres []*models.GameGenre
 	return genres, facades.UseDB().Find(&genres).Error
 }
 
-func (r *queryResolver) GetGameByID(ctx context.Context, id int64) (*models.Game, error) {
+func (r *queryResolver) GetGameByID(_ context.Context, id int64) (*models.Game, error) {
 	return new(repositories.GameRepository).GetById(id)
 }
 
-func (r *queryResolver) NewAndTrending(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) NewAndTrending(context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
 	return games, facades.UseDB().
 		Order("created_at desc").
@@ -129,23 +103,43 @@ func (r *queryResolver) NewAndTrending(ctx context.Context) ([]*models.Game, err
 		Error
 }
 
-func (r *queryResolver) SearchGames(ctx context.Context, page int64, keyword string) (*models.GamePagination, error) {
+func (r *queryResolver) SearchGames(_ context.Context, page int64, keyword string, price int64, genres []int64, category string) (*models.GamePagination, error) {
 	games := make([]*models.Game, 0)
 	total := new(int64)
+	db := facades.UseDB()
+	repo := new(repositories.GameRepository)
 
-	if err := facades.UseDB().Debug().
+	switch category {
+	case "community_recommends":
+		db = repo.GetCommunityRecommends()
+	case "special_offers":
+		db = repo.GetSpecialOffers()
+	case "top_sellers":
+		db = repo.GetTopSellers()
+	}
+
+	query := db.Debug().
 		Model(new(models.Game)).
-		Count(total).
-		Scopes(facades.UsePagination(int(page), 10)).
-		Where(
+		Scopes(facades.UsePagination(int(page), 10))
+
+	if price > 0 {
+		query = query.Where("games.price <= ?", price)
+	}
+
+	if len(genres) > 0 {
+		query = query.Where(
 			"games.id in (?)",
 			facades.UseDB().
-				Select("gtm.game_id").
 				Model(new(models.GameTag)).
+				Select("gtm.game_id").
 				Joins("join game_tag_mappings gtm on game_tags.id = gtm.game_tag_id").
-				Where("lower(game_tags.name) like ?", "%"+strings.ToLower(keyword)+"%"),
-		).
-		Or("lower(games.title) like ?", "%"+strings.ToLower(keyword)+"%").
+				Where("game_tags.id in ?", genres),
+		)
+	}
+
+	if err := query.
+		Where("lower(games.title) like ?", "%"+strings.ToLower(keyword)+"%").
+		Count(total).
 		Find(&games).
 		Error; err != nil {
 		return nil, err
@@ -157,17 +151,16 @@ func (r *queryResolver) SearchGames(ctx context.Context, page int64, keyword str
 	}, nil
 }
 
-func (r *queryResolver) SpecialOffersGame(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) SpecialOffersGame(context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
-	return games, facades.UseDB().
-		Where("discount > 0").
-		Order("discount desc").
+	return games, new(repositories.GameRepository).
+		GetSpecialOffers().
 		Limit(24).
 		Find(&games).
 		Error
 }
 
-func (r *queryResolver) Specials(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) Specials(context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
 	return games, facades.UseDB().
 		Where("discount >= ?", 0.5).
@@ -177,30 +170,10 @@ func (r *queryResolver) Specials(ctx context.Context) ([]*models.Game, error) {
 		Error
 }
 
-func (r *queryResolver) TopSellers(ctx context.Context) ([]*models.Game, error) {
+func (r *queryResolver) TopSellers(context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
-	aWeekAgo := time.Now().AddDate(0, 0, -7)
-
-	return games, facades.UseDB().
-		Joins(
-			"join (?) as purchases on games.id = purchases.game_id",
-			facades.UseDB().
-				Model(new(models.GamePurchaseTransactionHeader)).
-				Select("gptd.game_purchase_transaction_detail_game_id as game_id, count(gptd.game_purchase_transaction_header_id) as total_purchases").
-				Joins("join game_purchase_transaction_details gptd on game_purchase_transaction_headers.id = gptd.game_purchase_transaction_header_id").
-				Where("game_purchase_transaction_headers.created_at >= ?", aWeekAgo).
-				Group("gptd.game_purchase_transaction_detail_game_id"),
-		).
-		Joins(
-			"join (?) as gifts on games.id = gifts.game_id",
-			facades.UseDB().
-				Model(new(models.GameGiftTransactionHeader)).
-				Select("ggtd.game_gift_transaction_detail_game_id as game_id, count(ggtd.game_gift_transaction_header_id) as total_gifts").
-				Joins("join game_gift_transaction_details ggtd on game_gift_transaction_headers.id = ggtd.game_gift_transaction_header_id").
-				Where("game_gift_transaction_headers.created_at >= ?", aWeekAgo).
-				Group("ggtd.game_gift_transaction_detail_game_id"),
-		).
-		Order("total_purchases + total_gifts desc").
+	return games, new(repositories.GameRepository).
+		GetTopSellers().
 		Limit(10).
 		Find(&games).
 		Error
