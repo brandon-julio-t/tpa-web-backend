@@ -5,15 +5,22 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"github.com/brandon-julio-t/tpa-web-backend/services/notification_service"
 )
 
 func (r *mutationResolver) CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error) {
 	user, err := middlewares.UseAuth(ctx)
 	if err != nil {
+		return nil, err
+	}
+
+	profile := new(models.User)
+	if err := facades.UseDB().First(profile, profileID).Error; err != nil {
 		return nil, err
 	}
 
@@ -24,6 +31,10 @@ func (r *mutationResolver) CreateProfileComment(ctx context.Context, profileID i
 	}
 
 	if err := facades.UseDB().Create(&profileComment).Error; err != nil {
+		return nil, err
+	}
+
+	if err := notification_service.Notify(profile, fmt.Sprintf("%v commented on your profile", user.DisplayName)); err != nil {
 		return nil, err
 	}
 

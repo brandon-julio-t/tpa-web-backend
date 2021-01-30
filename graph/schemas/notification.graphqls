@@ -5,7 +5,11 @@ type Notification {
 }
 
 extend type User {
-    notification: [Notification!]!
+    notifications: [Notification!]!
+    receivedProfileCommentsCount: Int!
+    receivedInvitesCount: Int!
+    receivedGiftsCount: Int!
+    receivedMessagesCount: Int!
 }
 
 extend type Query {

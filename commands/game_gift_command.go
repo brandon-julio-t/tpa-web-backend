@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"github.com/brandon-julio-t/tpa-web-backend/services/notification_service"
 	"gorm.io/gorm"
 	"html/template"
 	"path/filepath"
@@ -108,6 +109,10 @@ func (g GameGiftCommand) Execute() error {
 
 	receiverEmail := friend.Email
 	if err := facades.UseMail().SendHTML(receiverHtmlOutput.String(), "STAEM Gift", "STAEMGiftReceiver", receiverEmail); err != nil {
+		return err
+	}
+
+	if err := notification_service.Notify(&friend, fmt.Sprintf("%v sent you a gift", g.User.DisplayName)); err != nil {
 		return err
 	}
 

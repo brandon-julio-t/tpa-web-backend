@@ -240,29 +240,33 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AccountName            func(childComplexity int) int
-		Cart                   func(childComplexity int) int
-		CartCount              func(childComplexity int) int
-		Country                func(childComplexity int) int
-		CustomURL              func(childComplexity int) int
-		DisplayName            func(childComplexity int) int
-		Email                  func(childComplexity int) int
-		FriendCode             func(childComplexity int) int
-		Friends                func(childComplexity int) int
-		ID                     func(childComplexity int) int
-		IngoingFriendRequests  func(childComplexity int) int
-		Notification           func(childComplexity int) int
-		OutgoingFriendRequests func(childComplexity int) int
-		ProfilePicture         func(childComplexity int) int
-		ProfileTheme           func(childComplexity int) int
-		RealName               func(childComplexity int) int
-		ReportCounts           func(childComplexity int) int
-		Stream                 func(childComplexity int) int
-		Summary                func(childComplexity int) int
-		SuspendedAt            func(childComplexity int) int
-		WalletBalance          func(childComplexity int) int
-		Wishlist               func(childComplexity int) int
-		WishlistCount          func(childComplexity int) int
+		AccountName                  func(childComplexity int) int
+		Cart                         func(childComplexity int) int
+		CartCount                    func(childComplexity int) int
+		Country                      func(childComplexity int) int
+		CustomURL                    func(childComplexity int) int
+		DisplayName                  func(childComplexity int) int
+		Email                        func(childComplexity int) int
+		FriendCode                   func(childComplexity int) int
+		Friends                      func(childComplexity int) int
+		ID                           func(childComplexity int) int
+		IngoingFriendRequests        func(childComplexity int) int
+		Notifications                func(childComplexity int) int
+		OutgoingFriendRequests       func(childComplexity int) int
+		ProfilePicture               func(childComplexity int) int
+		ProfileTheme                 func(childComplexity int) int
+		RealName                     func(childComplexity int) int
+		ReceivedGiftsCount           func(childComplexity int) int
+		ReceivedInvitesCount         func(childComplexity int) int
+		ReceivedMessagesCount        func(childComplexity int) int
+		ReceivedProfileCommentsCount func(childComplexity int) int
+		ReportCounts                 func(childComplexity int) int
+		Stream                       func(childComplexity int) int
+		Summary                      func(childComplexity int) int
+		SuspendedAt                  func(childComplexity int) int
+		WalletBalance                func(childComplexity int) int
+		Wishlist                     func(childComplexity int) int
+		WishlistCount                func(childComplexity int) int
 	}
 
 	UserPagination struct {
@@ -385,7 +389,11 @@ type UserResolver interface {
 
 	OutgoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
 	IngoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
-	Notification(ctx context.Context, obj *models.User) ([]*models.Notification, error)
+	Notifications(ctx context.Context, obj *models.User) ([]*models.Notification, error)
+	ReceivedProfileCommentsCount(ctx context.Context, obj *models.User) (int64, error)
+	ReceivedInvitesCount(ctx context.Context, obj *models.User) (int64, error)
+	ReceivedGiftsCount(ctx context.Context, obj *models.User) (int64, error)
+	ReceivedMessagesCount(ctx context.Context, obj *models.User) (int64, error)
 	Stream(ctx context.Context, obj *models.User) (string, error)
 }
 
@@ -1674,12 +1682,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.IngoingFriendRequests(childComplexity), true
 
-	case "User.notification":
-		if e.complexity.User.Notification == nil {
+	case "User.notifications":
+		if e.complexity.User.Notifications == nil {
 			break
 		}
 
-		return e.complexity.User.Notification(childComplexity), true
+		return e.complexity.User.Notifications(childComplexity), true
 
 	case "User.outgoingFriendRequests":
 		if e.complexity.User.OutgoingFriendRequests == nil {
@@ -1708,6 +1716,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.RealName(childComplexity), true
+
+	case "User.receivedGiftsCount":
+		if e.complexity.User.ReceivedGiftsCount == nil {
+			break
+		}
+
+		return e.complexity.User.ReceivedGiftsCount(childComplexity), true
+
+	case "User.receivedInvitesCount":
+		if e.complexity.User.ReceivedInvitesCount == nil {
+			break
+		}
+
+		return e.complexity.User.ReceivedInvitesCount(childComplexity), true
+
+	case "User.receivedMessagesCount":
+		if e.complexity.User.ReceivedMessagesCount == nil {
+			break
+		}
+
+		return e.complexity.User.ReceivedMessagesCount(childComplexity), true
+
+	case "User.receivedProfileCommentsCount":
+		if e.complexity.User.ReceivedProfileCommentsCount == nil {
+			break
+		}
+
+		return e.complexity.User.ReceivedProfileCommentsCount(childComplexity), true
 
 	case "User.reportCounts":
 		if e.complexity.User.ReportCounts == nil {
@@ -2037,7 +2073,11 @@ extend type Query {
 }
 
 extend type User {
-    notification: [Notification!]!
+    notifications: [Notification!]!
+    receivedProfileCommentsCount: Int!
+    receivedInvitesCount: Int!
+    receivedGiftsCount: Int!
+    receivedMessagesCount: Int!
 }
 
 extend type Query {
@@ -9051,7 +9091,7 @@ func (ec *executionContext) _User_ingoingFriendRequests(ctx context.Context, fie
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_notification(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_notifications(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -9069,7 +9109,7 @@ func (ec *executionContext) _User_notification(ctx context.Context, field graphq
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Notification(rctx, obj)
+		return ec.resolvers.User().Notifications(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9084,6 +9124,146 @@ func (ec *executionContext) _User_notification(ctx context.Context, field graphq
 	res := resTmp.([]*models.Notification)
 	fc.Result = res
 	return ec.marshalNNotification2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotificationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_receivedProfileCommentsCount(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ReceivedProfileCommentsCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_receivedInvitesCount(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ReceivedInvitesCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_receivedGiftsCount(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ReceivedGiftsCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_receivedMessagesCount(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ReceivedMessagesCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_stream(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -12198,7 +12378,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
-		case "notification":
+		case "notifications":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -12206,7 +12386,63 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._User_notification(ctx, field, obj)
+				res = ec._User_notifications(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "receivedProfileCommentsCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_receivedProfileCommentsCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "receivedInvitesCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_receivedInvitesCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "receivedGiftsCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_receivedGiftsCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "receivedMessagesCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_receivedMessagesCount(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

@@ -5,11 +5,13 @@ package resolvers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"github.com/brandon-julio-t/tpa-web-backend/services/notification_service"
 )
 
 func (r *mutationResolver) AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error) {
@@ -35,6 +37,10 @@ func (r *mutationResolver) AddPrivateMessage(ctx context.Context, friendID int64
 
 	if friendSocket, ok := r.PrivateChatSockets[friendID]; ok {
 		friendSocket <- &privateMessage
+	} else {
+		if err := notification_service.Notify(&friend, fmt.Sprintf("%v sent you a message", user.DisplayName)); err != nil {
+			return nil, err
+		}
 	}
 
 	return &privateMessage, nil

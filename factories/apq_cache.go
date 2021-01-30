@@ -23,9 +23,9 @@ func NewApqCache() *ApqCache {
 
 	client := redis.NewClient(option)
 
-	//if err := client.Ping().Err(); err != nil {
-	//	log.Fatal(err)
-	//}
+	if err := client.Ping().Err(); err != nil {
+		log.Fatal(err)
+	}
 
 	return &ApqCache{client: client, ttl: 24 * time.Hour}
 }

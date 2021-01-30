@@ -26,7 +26,7 @@ func SeedGames() error {
 	}
 
 	return facades.UseDB().Transaction(func(tx *gorm.DB) error {
-		for i := 0; i < 50; i++ {
+		for i := 0; i < 20; i++ {
 			hoursPlayed, err := strconv.ParseFloat(faker.Number().Decimal(5, 2), 64)
 			if err != nil {
 				return err
@@ -60,43 +60,33 @@ func SeedGames() error {
 
 			if err := tx.Create(&models.Game{
 				Banner:          models.AssetFile{File: backgroundSLC, ContentType: "image/png"},
-				CreatedAt:       faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
+				CreatedAt:       faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1)*-1), time.Now()),
 				Description:     faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
+				Developer:       faker.Company().Name(),
 				Discount:        discount,
 				GameTags:        tags,
 				GenreID:         genreId,
 				HoursPlayed:     hoursPlayed,
 				IsInappropriate: faker.Number().NumberInt(1)%2 == 0,
 				Price:           float64(faker.Commerce().Price()),
+				Publisher:       faker.Company().Name() + ", " + faker.Company().Suffix(),
 				GameGameReviews: []*models.GameReview{
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
-						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1)*-1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
-						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1)*-1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 					{
 						GameReviewUserID: 2,
 						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
-						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
-						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
-					},
-					{
-						GameReviewUserID: 2,
-						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
-						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
-						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
-					},
-					{
-						GameReviewUserID: 2,
-						Content:          faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
-						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1) * -1), time.Now()),
+						CreatedAt:        faker.Date().Between(time.Now().AddDate(0, 0, faker.Number().NumberInt(1)*-1), time.Now()),
 						IsRecommended:    faker.Number().NumberInt(1)%2 == 0,
 					},
 				},

@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+// TODO: new item in users inventory
+
 type Notification struct {
 	ID               int64
 	UserID           int64
