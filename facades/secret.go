@@ -2,6 +2,7 @@ package facades
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"log"
 )
 
@@ -12,6 +13,7 @@ func init() {
 	if _, err := rand.Read(secretSingleton); err != nil {
 		log.Fatal(err)
 	}
+	secretSingleton = []byte(hex.EncodeToString(secretSingleton))
 }
 
 func UseSecret() []byte {
