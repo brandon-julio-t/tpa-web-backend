@@ -107,6 +107,19 @@ func (r *queryResolver) User(ctx context.Context, accountName string) (*models.U
 	return user, facades.UseDB().First(user, "account_name = ?", accountName).Error
 }
 
+func (r *userResolver) Cart(ctx context.Context, obj *models.User) ([]*models.Game, error) {
+	var games []*models.Game
+	return games, facades.UseDB().Model(obj).Association("UserCart").Find(&games)
+}
+
+func (r *userResolver) CartCount(ctx context.Context, obj *models.User) (int64, error) {
+	return facades.UseDB().Model(obj).Association("UserCart").Count(), nil
+}
+
+func (r *userResolver) Level(ctx context.Context, obj *models.User) (int64, error) {
+	return obj.Exp / 100, nil
+}
+
 func (r *userResolver) ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error) {
 	return &obj.UserProfilePicture, facades.UseDB().Preload("UserProfilePicture").First(obj).Error
 }
@@ -118,15 +131,6 @@ func (r *userResolver) Wishlist(ctx context.Context, obj *models.User) ([]*model
 
 func (r *userResolver) WishlistCount(ctx context.Context, obj *models.User) (int64, error) {
 	return facades.UseDB().Model(obj).Association("UserWishlist").Count(), nil
-}
-
-func (r *userResolver) Cart(ctx context.Context, obj *models.User) ([]*models.Game, error) {
-	var games []*models.Game
-	return games, facades.UseDB().Model(obj).Association("UserCart").Find(&games)
-}
-
-func (r *userResolver) CartCount(ctx context.Context, obj *models.User) (int64, error) {
-	return facades.UseDB().Model(obj).Association("UserCart").Count(), nil
 }
 
 // User returns generated.UserResolver implementation.

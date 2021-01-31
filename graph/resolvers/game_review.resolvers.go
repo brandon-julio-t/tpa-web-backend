@@ -161,12 +161,12 @@ func (r *mutationResolver) UpVoteReview(ctx context.Context, id int64) (*models.
 	}
 
 	review := new(models.GameReview)
-	if err := facades.UseDB().Debug().First(review, id).Error; err != nil {
+	if err := facades.UseDB().First(review, id).Error; err != nil {
 		return nil, err
 	}
 	log.Print(review)
 	vote := new(models.GameReviewVote)
-	if err := facades.UseDB().Debug().
+	if err := facades.UseDB().
 		Where("game_review_vote_user_id = ?", user.ID).
 		Where("game_review_vote_game_review_id = ?", review.ID).
 		First(vote).
@@ -175,7 +175,7 @@ func (r *mutationResolver) UpVoteReview(ctx context.Context, id int64) (*models.
 			return nil, err
 		}
 
-		return review, facades.UseDB().Debug().Create(&models.GameReviewVote{
+		return review, facades.UseDB().Create(&models.GameReviewVote{
 			GameReviewVoteGameReview: *review,
 			GameReviewVoteUser:       *user,
 			IsUpVote:                 true,
@@ -183,11 +183,11 @@ func (r *mutationResolver) UpVoteReview(ctx context.Context, id int64) (*models.
 	}
 
 	if vote.IsUpVote {
-		return review, facades.UseDB().Debug().Delete(vote).Error
+		return review, facades.UseDB().Delete(vote).Error
 	}
 
 	vote.IsUpVote = !vote.IsUpVote
-	return review, facades.UseDB().Debug().Save(vote).Error
+	return review, facades.UseDB().Save(vote).Error
 }
 
 func (r *mutationResolver) DownVoteReview(ctx context.Context, id int64) (*models.GameReview, error) {
@@ -197,12 +197,12 @@ func (r *mutationResolver) DownVoteReview(ctx context.Context, id int64) (*model
 	}
 
 	review := new(models.GameReview)
-	if err := facades.UseDB().Debug().Debug().First(review, id).Error; err != nil {
+	if err := facades.UseDB().First(review, id).Error; err != nil {
 		return nil, err
 	}
 
 	vote := new(models.GameReviewVote)
-	if err := facades.UseDB().Debug().
+	if err := facades.UseDB().
 		Where("game_review_vote_user_id = ?", user.ID).
 		Where("game_review_vote_game_review_id = ?", review.ID).
 		First(vote).
@@ -211,7 +211,7 @@ func (r *mutationResolver) DownVoteReview(ctx context.Context, id int64) (*model
 			return nil, err
 		}
 
-		return review, facades.UseDB().Debug().Create(&models.GameReviewVote{
+		return review, facades.UseDB().Create(&models.GameReviewVote{
 			GameReviewVoteGameReview: *review,
 			GameReviewVoteUser:       *user,
 			IsUpVote:                 false,
@@ -219,11 +219,11 @@ func (r *mutationResolver) DownVoteReview(ctx context.Context, id int64) (*model
 	}
 
 	if !vote.IsUpVote {
-		return review, facades.UseDB().Debug().Delete(vote).Error
+		return review, facades.UseDB().Delete(vote).Error
 	}
 
 	vote.IsUpVote = !vote.IsUpVote
-	return review, facades.UseDB().Debug().Save(vote).Error
+	return review, facades.UseDB().Save(vote).Error
 }
 
 // GameReview returns generated.GameReviewResolver implementation.

@@ -3,12 +3,14 @@ type Game {
     banner: AssetFile!
     createdAt: Time!
     description: String!
+    developer: String!
     discount: Float!
     genre: GameGenre!
     isInappropriate: Boolean!
     isInCart: Boolean!
     isInWishlist: Boolean!
     price: Float!
+    publisher: String!
     slideshows: [GameSlideshow!]!
     systemRequirements: String!
     tags: [GameTag!]!
@@ -28,6 +30,10 @@ type GamePagination {
 type GameGenre {
     id: ID!
     name: String!
+}
+
+extend type User {
+    games: [Game!]!
 }
 
 extend type Query {

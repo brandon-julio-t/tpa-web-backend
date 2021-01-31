@@ -23,6 +23,7 @@ type User struct {
 	CustomURL            string `gorm:"uniqueIndex"`
 	DisplayName          string
 	Email                string `gorm:"uniqueIndex"`
+	Exp                  int64
 	Friends              []*Friendship
 	FriendCode           string `gorm:"uniqueIndex"`
 	Password             string

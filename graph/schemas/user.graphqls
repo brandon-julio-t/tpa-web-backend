@@ -4,10 +4,13 @@ scalar Time
 type User {
     id: ID!
     accountName: String!
+    cart: [Game!]!
+    cartCount: Int!
     country: Country!
     customUrl: String!
     displayName: String!
     email: String!
+    level: Int!
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
@@ -17,8 +20,6 @@ type User {
     walletBalance: Float!
     wishlist: [Game!]!
     wishlistCount: Int!
-    cart: [Game!]!
-    cartCount: Int!
 }
 
 type UserPagination {

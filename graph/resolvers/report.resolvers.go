@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -30,8 +31,31 @@ func (r *mutationResolver) SubmitReport(ctx context.Context, userID int64, descr
 		Reported:    *reported,
 		Description: description,
 	}
+
 	if err := facades.UseDB().Create(report).Error; err != nil {
 		return nil, err
+	}
+
+	count := new(int64)
+	now := time.Now()
+	aWeekAgo := now.AddDate(0, 0, -7)
+
+	if err := facades.UseDB().
+		Debug().
+		Model(new(models.Report)).
+		Where("reported_id = ?", reported.ID).
+		Where("created_at >= ?", aWeekAgo).
+		Where("created_at <= ?", now).
+		Count(count).
+		Error; err != nil {
+		return nil, err
+	}
+
+	if *count > 5 {
+		reported.SuspendedAt = time.Now()
+		if err := facades.UseDB().Save(reported).Error; err != nil {
+			return nil, err
+		}
 	}
 
 	return report, nil

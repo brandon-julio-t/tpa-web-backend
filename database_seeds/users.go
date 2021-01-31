@@ -25,6 +25,7 @@ func SeedUsers() error {
 	facades.UseDB().Clauses(clause.OnConflict{DoNothing: true}).Create(&models.User{
 		AccountName: "Admin",
 		Email:       "admin@admin.com",
+		Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 		Password:    string(adminHash),
 		CountryID:   69,
 		UserProfilePicture: models.AssetFile{
@@ -44,6 +45,7 @@ func SeedUsers() error {
 		{
 			AccountName: "User",
 			Email:       "user@user.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -56,6 +58,7 @@ func SeedUsers() error {
 		{
 			AccountName: "BR",
 			Email:       "brandon.julio.t@icloud.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -68,6 +71,7 @@ func SeedUsers() error {
 		{
 			AccountName: "CC",
 			Email:       "cc@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -80,6 +84,7 @@ func SeedUsers() error {
 		{
 			AccountName: "ST",
 			Email:       "st@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -92,6 +97,7 @@ func SeedUsers() error {
 		{
 			AccountName: "VN",
 			Email:       "vn@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -104,6 +110,7 @@ func SeedUsers() error {
 		{
 			AccountName: "TC",
 			Email:       "tc@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -116,6 +123,7 @@ func SeedUsers() error {
 		{
 			AccountName: "LL",
 			Email:       "ll@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -128,6 +136,7 @@ func SeedUsers() error {
 		{
 			AccountName: "GA",
 			Email:       "ga@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -140,6 +149,7 @@ func SeedUsers() error {
 		{
 			AccountName: "JP",
 			Email:       "jp@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{
@@ -152,6 +162,7 @@ func SeedUsers() error {
 		{
 			AccountName: "AE",
 			Email:       "ae@slc.com",
+			Exp: faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
 			CountryID:   69,
 			UserProfilePicture: models.AssetFile{

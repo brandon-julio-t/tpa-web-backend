@@ -116,7 +116,13 @@ func (g GameGiftCommand) Execute() error {
 		return err
 	}
 
-	return g.DB.Model(&g.User).Association("UserCart").Clear()
+	if err := g.DB.Model(&g.User).Association("UserCart").Clear(); err != nil {
+		return err
+	}
+
+
+	g.User.Exp += 50
+	return g.DB.Save(&g.User).Error
 }
 
 type mailSenderGamesData struct {
