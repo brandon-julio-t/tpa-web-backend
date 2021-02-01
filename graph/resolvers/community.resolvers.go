@@ -23,14 +23,16 @@ func (r *communityResolver) ImagesAndVideos(ctx context.Context, obj *models.Com
 		Error
 }
 
-func (r *communityResolver) Review(ctx context.Context, obj *models.Community, id int64) (*models.CommunityReview, error) {
-	obj.CommunityReview = models.CommunityReview{}
+func (r *communityResolver) Review(ctx context.Context, obj *models.Community, id int64) (*models.GameReview, error) {
+	obj.CommunityReview = models.GameReview{}
 	return &obj.CommunityReview, facades.UseDB().First(&obj.CommunityImageAndVideo, id).Error
 }
 
-func (r *communityResolver) Reviews(ctx context.Context, obj *models.Community) ([]*models.CommunityReview, error) {
-	obj.CommunityReviews = make([]*models.CommunityReview, 0)
-	return obj.CommunityReviews, nil
+func (r *communityResolver) Reviews(ctx context.Context, obj *models.Community) ([]*models.GameReview, error) {
+	obj.CommunityReviews = make([]*models.GameReview, 0)
+	return obj.CommunityReviews, facades.UseDB().
+		Find(&obj.CommunityReviews).
+		Error
 }
 
 func (r *communityResolver) Discussion(ctx context.Context, obj *models.Community, id int64) (*models.CommunityDiscussion, error) {

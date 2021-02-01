@@ -6,7 +6,6 @@ package resolvers
 import (
 	"context"
 	"errors"
-	"gorm.io/gorm"
 	"io/ioutil"
 	"math"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
+	"gorm.io/gorm"
 )
 
 func (r *communityImageAndVideoResolver) Comments(ctx context.Context, obj *models.CommunityImageAndVideo, page int64) (*models.CommunityImageAndVideoCommentPagination, error) {

@@ -72,18 +72,19 @@ func (r *gameResolver) RecentReviews(ctx context.Context, obj *models.Game) ([]*
 		Error
 }
 
-func (r *gameReviewResolver) User(ctx context.Context, obj *models.GameReview) (*models.User, error) {
-	return &obj.GameReviewUser, facades.UseDB().Preload("GameReviewUser").First(obj).Error
-}
+func (r *gameReviewResolver) DownVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error) {
+	users := make([]*models.User, 0)
 
-func (r *gameReviewResolver) UpVotes(ctx context.Context, obj *models.GameReview) (int64, error) {
-	count := int64(0)
-	return count, facades.UseDB().
-		First(obj).
-		Joins("join game_review_votes grv on game_reviews.id = grv.game_review_vote_game_review_id").
-		Where("is_up_vote = ?", true).
-		Count(&count).
-		Error
+	if err := facades.UseDB().
+		Joins("join game_review_votes grv on users.id = grv.game_review_vote_user_id").
+		Where("is_up_vote = ?", false).
+		Where("grv.game_review_vote_game_review_id = ?", obj.ID).
+		Find(&users).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (r *gameReviewResolver) DownVotes(ctx context.Context, obj *models.GameReview) (int64, error) {
@@ -94,6 +95,11 @@ func (r *gameReviewResolver) DownVotes(ctx context.Context, obj *models.GameRevi
 		Where("is_up_vote = ?", false).
 		Count(&count).
 		Error
+}
+
+func (r *gameReviewResolver) Game(ctx context.Context, obj *models.GameReview) (*models.Game, error) {
+	game := new(models.Game)
+	return game, facades.UseDB().First(game, obj.GameReviewGameID).Error
 }
 
 func (r *gameReviewResolver) UpVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error) {
@@ -111,19 +117,18 @@ func (r *gameReviewResolver) UpVoters(ctx context.Context, obj *models.GameRevie
 	return users, nil
 }
 
-func (r *gameReviewResolver) DownVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error) {
-	users := make([]*models.User, 0)
+func (r *gameReviewResolver) UpVotes(ctx context.Context, obj *models.GameReview) (int64, error) {
+	count := int64(0)
+	return count, facades.UseDB().
+		First(obj).
+		Joins("join game_review_votes grv on game_reviews.id = grv.game_review_vote_game_review_id").
+		Where("is_up_vote = ?", true).
+		Count(&count).
+		Error
+}
 
-	if err := facades.UseDB().
-		Joins("join game_review_votes grv on users.id = grv.game_review_vote_user_id").
-		Where("is_up_vote = ?", false).
-		Where("grv.game_review_vote_game_review_id = ?", obj.ID).
-		Find(&users).
-		Error; err != nil {
-		return nil, err
-	}
-
-	return users, nil
+func (r *gameReviewResolver) User(ctx context.Context, obj *models.GameReview) (*models.User, error) {
+	return &obj.GameReviewUser, facades.UseDB().Preload("GameReviewUser").First(obj).Error
 }
 
 func (r *mutationResolver) CreateReview(ctx context.Context, gameID int64, content string, isRecommended bool) (*models.GameReview, error) {

@@ -100,10 +100,6 @@ type ComplexityRoot struct {
 		TotalPages func(childComplexity int) int
 	}
 
-	CommunityReview struct {
-		ID func(childComplexity int) int
-	}
-
 	Country struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
@@ -156,6 +152,7 @@ type ComplexityRoot struct {
 		CreatedAt     func(childComplexity int) int
 		DownVoters    func(childComplexity int) int
 		DownVotes     func(childComplexity int) int
+		Game          func(childComplexity int) int
 		ID            func(childComplexity int) int
 		IsRecommended func(childComplexity int) int
 		UpVoters      func(childComplexity int) int
@@ -341,8 +338,8 @@ type ComplexityRoot struct {
 type CommunityResolver interface {
 	ImageAndVideo(ctx context.Context, obj *models.Community, id int64) (*models.CommunityImageAndVideo, error)
 	ImagesAndVideos(ctx context.Context, obj *models.Community) ([]*models.CommunityImageAndVideo, error)
-	Review(ctx context.Context, obj *models.Community, id int64) (*models.CommunityReview, error)
-	Reviews(ctx context.Context, obj *models.Community) ([]*models.CommunityReview, error)
+	Review(ctx context.Context, obj *models.Community, id int64) (*models.GameReview, error)
+	Reviews(ctx context.Context, obj *models.Community) ([]*models.GameReview, error)
 	Discussion(ctx context.Context, obj *models.Community, id int64) (*models.CommunityDiscussion, error)
 	Discussions(ctx context.Context, obj *models.Community) ([]*models.CommunityDiscussion, error)
 }
@@ -377,12 +374,13 @@ type GameResolver interface {
 	RecentReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
 }
 type GameReviewResolver interface {
-	User(ctx context.Context, obj *models.GameReview) (*models.User, error)
-
-	UpVotes(ctx context.Context, obj *models.GameReview) (int64, error)
-	DownVotes(ctx context.Context, obj *models.GameReview) (int64, error)
-	UpVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error)
 	DownVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error)
+	DownVotes(ctx context.Context, obj *models.GameReview) (int64, error)
+	Game(ctx context.Context, obj *models.GameReview) (*models.Game, error)
+
+	UpVoters(ctx context.Context, obj *models.GameReview) ([]*models.User, error)
+	UpVotes(ctx context.Context, obj *models.GameReview) (int64, error)
+	User(ctx context.Context, obj *models.GameReview) (*models.User, error)
 }
 type GameSlideshowResolver interface {
 	File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error)
@@ -716,13 +714,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CommunityImageAndVideoCommentPagination.TotalPages(childComplexity), true
 
-	case "CommunityReview.id":
-		if e.complexity.CommunityReview.ID == nil {
-			break
-		}
-
-		return e.complexity.CommunityReview.ID(childComplexity), true
-
 	case "Country.id":
 		if e.complexity.Country.ID == nil {
 			break
@@ -953,6 +944,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.GameReview.DownVotes(childComplexity), true
+
+	case "GameReview.game":
+		if e.complexity.GameReview.Game == nil {
+			break
+		}
+
+		return e.complexity.GameReview.Game(childComplexity), true
 
 	case "GameReview.id":
 		if e.complexity.GameReview.ID == nil {
@@ -2329,8 +2327,8 @@ input Gift {
 	{Name: "graph/schemas/community.graphqls", Input: `type Community {
     imageAndVideo(id: ID!): CommunityImageAndVideo!
     imagesAndVideos: [CommunityImageAndVideo!]!
-    review(id: ID!): CommunityReview!
-    reviews: [CommunityReview!]!
+    review(id: ID!): GameReview!
+    reviews: [GameReview!]!
     discussion(id: ID!): CommunityDiscussion!
     discussions: [CommunityDiscussion!]!
 }
@@ -2380,10 +2378,6 @@ extend type Mutation {
     likeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
     dislikeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
     postCommunityImagesAndVideosComment(imageAndVideoId: ID!, body: String!): CommunityImageAndVideoComment!
-}
-`, BuiltIn: false},
-	{Name: "graph/schemas/community_reviews.graphqls", Input: `type CommunityReview {
-    id: ID!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/country.graphqls", Input: `type Country {
@@ -2510,14 +2504,15 @@ input UpdateGame {
 `, BuiltIn: false},
 	{Name: "graph/schemas/game_review.graphqls", Input: `type GameReview {
     id: ID!
-    user: User!
     content: String!
-    isRecommended: Boolean!
     createdAt: Time!
-    upVotes: Int!
-    downVotes: Int!
-    upVoters: [User!]!
     downVoters: [User!]!
+    downVotes: Int!
+    game: Game!
+    isRecommended: Boolean!
+    upVoters: [User!]!
+    upVotes: Int!
+    user: User!
 }
 
 extend type Game {
@@ -4030,9 +4025,9 @@ func (ec *executionContext) _Community_review(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*models.CommunityReview)
+	res := resTmp.(*models.GameReview)
 	fc.Result = res
-	return ec.marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx, field.Selections, res)
+	return ec.marshalNGameReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReview(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Community_reviews(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
@@ -4065,9 +4060,9 @@ func (ec *executionContext) _Community_reviews(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.CommunityReview)
+	res := resTmp.([]*models.GameReview)
 	fc.Result = res
-	return ec.marshalNCommunityReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReviewᚄ(ctx, field.Selections, res)
+	return ec.marshalNGameReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameReviewᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Community_discussion(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
@@ -4817,41 +4812,6 @@ func (ec *executionContext) _CommunityImageAndVideoCommentPagination_totalPages(
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CommunityReview_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityReview) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CommunityReview",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int64)
-	fc.Result = res
-	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Country_id(ctx context.Context, field graphql.CollectedField, obj *models.Country) (ret graphql.Marshaler) {
@@ -5904,41 +5864,6 @@ func (ec *executionContext) _GameReview_id(ctx context.Context, field graphql.Co
 	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _GameReview_user(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "GameReview",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.GameReview().User(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*models.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _GameReview_content(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5972,41 +5897,6 @@ func (ec *executionContext) _GameReview_content(ctx context.Context, field graph
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _GameReview_isRecommended(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "GameReview",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsRecommended, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _GameReview_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
@@ -6044,7 +5934,7 @@ func (ec *executionContext) _GameReview_createdAt(ctx context.Context, field gra
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _GameReview_upVotes(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+func (ec *executionContext) _GameReview_downVoters(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6062,7 +5952,7 @@ func (ec *executionContext) _GameReview_upVotes(ctx context.Context, field graph
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.GameReview().UpVotes(rctx, obj)
+		return ec.resolvers.GameReview().DownVoters(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6074,9 +5964,9 @@ func (ec *executionContext) _GameReview_upVotes(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int64)
+	res := resTmp.([]*models.User)
 	fc.Result = res
-	return ec.marshalNInt2int64(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _GameReview_downVotes(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
@@ -6114,6 +6004,76 @@ func (ec *executionContext) _GameReview_downVotes(ctx context.Context, field gra
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _GameReview_game(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().Game(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_isRecommended(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRecommended, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _GameReview_upVoters(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6149,7 +6109,7 @@ func (ec *executionContext) _GameReview_upVoters(ctx context.Context, field grap
 	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _GameReview_downVoters(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+func (ec *executionContext) _GameReview_upVotes(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6167,7 +6127,7 @@ func (ec *executionContext) _GameReview_downVoters(ctx context.Context, field gr
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.GameReview().DownVoters(rctx, obj)
+		return ec.resolvers.GameReview().UpVotes(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6179,9 +6139,44 @@ func (ec *executionContext) _GameReview_downVoters(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*models.User)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _GameReview_user(ctx context.Context, field graphql.CollectedField, obj *models.GameReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "GameReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.GameReview().User(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _GameSlideshow_game(ctx context.Context, field graphql.CollectedField, obj *models.GameSlideshow) (ret graphql.Marshaler) {
@@ -13191,33 +13186,6 @@ func (ec *executionContext) _CommunityImageAndVideoCommentPagination(ctx context
 	return out
 }
 
-var communityReviewImplementors = []string{"CommunityReview"}
-
-func (ec *executionContext) _CommunityReview(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityReview) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, communityReviewImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("CommunityReview")
-		case "id":
-			out.Values[i] = ec._CommunityReview_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
 var countryImplementors = []string{"Country"}
 
 func (ec *executionContext) _Country(ctx context.Context, sel ast.SelectionSet, obj *models.Country) graphql.Marshaler {
@@ -13592,27 +13560,8 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "user":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._GameReview_user(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "content":
 			out.Values[i] = ec._GameReview_content(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "isRecommended":
-			out.Values[i] = ec._GameReview_isRecommended(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -13621,7 +13570,7 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "upVotes":
+		case "downVoters":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -13629,7 +13578,7 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._GameReview_upVotes(ctx, field, obj)
+				res = ec._GameReview_downVoters(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -13649,6 +13598,25 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 				}
 				return res
 			})
+		case "game":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_game(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "isRecommended":
+			out.Values[i] = ec._GameReview_isRecommended(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "upVoters":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13663,7 +13631,7 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 				}
 				return res
 			})
-		case "downVoters":
+		case "upVotes":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -13671,7 +13639,21 @@ func (ec *executionContext) _GameReview(ctx context.Context, sel ast.SelectionSe
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._GameReview_downVoters(ctx, field, obj)
+				res = ec._GameReview_upVotes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "user":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._GameReview_user(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -15509,57 +15491,6 @@ func (ec *executionContext) marshalNCommunityImageAndVideoCommentPagination2ᚖg
 		return graphql.Null
 	}
 	return ec._CommunityImageAndVideoCommentPagination(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNCommunityReview2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx context.Context, sel ast.SelectionSet, v models.CommunityReview) graphql.Marshaler {
-	return ec._CommunityReview(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNCommunityReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReviewᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityReview) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx context.Context, sel ast.SelectionSet, v *models.CommunityReview) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._CommunityReview(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNCountry2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountry(ctx context.Context, sel ast.SelectionSet, v models.Country) graphql.Marshaler {

@@ -1,8 +1,8 @@
 type Community {
     imageAndVideo(id: ID!): CommunityImageAndVideo!
     imagesAndVideos: [CommunityImageAndVideo!]!
-    review(id: ID!): CommunityReview!
-    reviews: [CommunityReview!]!
+    review(id: ID!): GameReview!
+    reviews: [GameReview!]!
     discussion(id: ID!): CommunityDiscussion!
     discussions: [CommunityDiscussion!]!
 }

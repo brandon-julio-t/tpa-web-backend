@@ -9,6 +9,6 @@ type Community struct {
 	CommunityDiscussions     []*CommunityDiscussion
 	CommunityImageAndVideo   CommunityImageAndVideo
 	CommunityImagesAndVideos []*CommunityImageAndVideo
-	CommunityReview          CommunityReview
-	CommunityReviews         []*CommunityReview
+	CommunityReview          GameReview
+	CommunityReviews         []*GameReview
 }

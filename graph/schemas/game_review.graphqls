@@ -1,13 +1,14 @@
 type GameReview {
     id: ID!
-    user: User!
     content: String!
-    isRecommended: Boolean!
     createdAt: Time!
-    upVotes: Int!
-    downVotes: Int!
-    upVoters: [User!]!
     downVoters: [User!]!
+    downVotes: Int!
+    game: Game!
+    isRecommended: Boolean!
+    upVoters: [User!]!
+    upVotes: Int!
+    user: User!
 }
 
 extend type Game {
