@@ -67,7 +67,8 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 		}).String())
 	}
 
-	return user, nil
+	user.Status = "online"
+	return user, facades.UseDB().Save(user).Error
 }
 
 func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
@@ -96,7 +97,8 @@ func (r *mutationResolver) Logout(ctx context.Context) (*models.User, error) {
 		}).String())
 	}
 
-	return user, nil
+	user.Status = "offline"
+	return user, facades.UseDB().Save(user).Error
 }
 
 func (r *queryResolver) Auth(ctx context.Context) (*models.User, error) {

@@ -1,0 +1,7 @@
+type DiscoveryQueue {
+    newReleases: [Game!]!
+}
+
+extend type Query {
+    discoverQueue: DiscoveryQueue!
+}

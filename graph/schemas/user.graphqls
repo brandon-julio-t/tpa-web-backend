@@ -15,6 +15,7 @@ type User {
     profileTheme: String!
     realName: String!
     reportCounts: Int!
+    status: String!
     summary: String!
     suspendedAt: Time
     walletBalance: Float!

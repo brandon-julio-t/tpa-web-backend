@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	DiscoveryQueue() DiscoveryQueueResolver
 	FriendRequest() FriendRequestResolver
 	Game() GameResolver
 	GameReview() GameReviewResolver
@@ -59,6 +60,10 @@ type ComplexityRoot struct {
 	Country struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
+	}
+
+	DiscoveryQueue struct {
+		NewReleases func(childComplexity int) int
 	}
 
 	FriendRequest struct {
@@ -202,6 +207,7 @@ type ComplexityRoot struct {
 		AllCountries                func(childComplexity int) int
 		Auth                        func(childComplexity int) int
 		CommunityRecommended        func(childComplexity int) int
+		DiscoverQueue               func(childComplexity int) int
 		FeaturedAndRecommendedGames func(childComplexity int) int
 		Games                       func(childComplexity int, page int64) int
 		Genres                      func(childComplexity int) int
@@ -265,6 +271,7 @@ type ComplexityRoot struct {
 		ReceivedMessagesCount        func(childComplexity int) int
 		ReceivedProfileCommentsCount func(childComplexity int) int
 		ReportCounts                 func(childComplexity int) int
+		Status                       func(childComplexity int) int
 		Stream                       func(childComplexity int) int
 		Summary                      func(childComplexity int) int
 		SuspendedAt                  func(childComplexity int) int
@@ -279,6 +286,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type DiscoveryQueueResolver interface {
+	NewReleases(ctx context.Context, obj *models.DiscoveryQueue) ([]*models.Game, error)
+}
 type FriendRequestResolver interface {
 	User(ctx context.Context, obj *models.FriendRequest) (*models.User, error)
 	Friend(ctx context.Context, obj *models.FriendRequest) (*models.User, error)
@@ -353,6 +363,7 @@ type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
+	DiscoverQueue(ctx context.Context) (*models.DiscoveryQueue, error)
 	UserByFriendCode(ctx context.Context, code string) (*models.User, error)
 	CommunityRecommended(ctx context.Context) ([]*models.Game, error)
 	FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error)
@@ -446,6 +457,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Country.Name(childComplexity), true
+
+	case "DiscoveryQueue.newReleases":
+		if e.complexity.DiscoveryQueue.NewReleases == nil {
+			break
+		}
+
+		return e.complexity.DiscoveryQueue.NewReleases(childComplexity), true
 
 	case "FriendRequest.createdAt":
 		if e.complexity.FriendRequest.CreatedAt == nil {
@@ -1339,6 +1357,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.CommunityRecommended(childComplexity), true
 
+	case "Query.discoverQueue":
+		if e.complexity.Query.DiscoverQueue == nil {
+			break
+		}
+
+		return e.complexity.Query.DiscoverQueue(childComplexity), true
+
 	case "Query.featuredAndRecommendedGames":
 		if e.complexity.Query.FeaturedAndRecommendedGames == nil {
 			break
@@ -1787,6 +1812,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.ReportCounts(childComplexity), true
 
+	case "User.status":
+		if e.complexity.User.Status == nil {
+			break
+		}
+
+		return e.complexity.User.Status(childComplexity), true
+
 	case "User.stream":
 		if e.complexity.User.Stream == nil {
 			break
@@ -1969,6 +2001,13 @@ extend type Query {
     allCountries: [Country!]!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/discovery_queue.graphqls", Input: `type DiscoveryQueue {
+    newReleases: [Game!]!
+}
+
+extend type Query {
+    discoverQueue: DiscoveryQueue!
+}`, BuiltIn: false},
 	{Name: "graph/schemas/friend.graphqls", Input: `type FriendRequest {
     id: ID!
     user: User!
@@ -2257,6 +2296,7 @@ type User {
     profileTheme: String!
     realName: String!
     reportCounts: Int!
+    status: String!
     summary: String!
     suspendedAt: Time
     walletBalance: Float!
@@ -3421,6 +3461,41 @@ func (ec *executionContext) _Country_name(ctx context.Context, field graphql.Col
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DiscoveryQueue_newReleases(ctx context.Context, field graphql.CollectedField, obj *models.DiscoveryQueue) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DiscoveryQueue",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.DiscoveryQueue().NewReleases(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _FriendRequest_id(ctx context.Context, field graphql.CollectedField, obj *models.FriendRequest) (ret graphql.Marshaler) {
@@ -7214,6 +7289,41 @@ func (ec *executionContext) _Query_allCountries(ctx context.Context, field graph
 	return ec.marshalNCountry2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_discoverQueue(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().DiscoverQueue(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.DiscoveryQueue)
+	fc.Result = res
+	return ec.marshalNDiscoveryQueue2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐDiscoveryQueue(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_userByFriendCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8951,6 +9061,41 @@ func (ec *executionContext) _User_reportCounts(ctx context.Context, field graphq
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_status(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_summary(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -11035,6 +11180,42 @@ func (ec *executionContext) _Country(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var discoveryQueueImplementors = []string{"DiscoveryQueue"}
+
+func (ec *executionContext) _DiscoveryQueue(ctx context.Context, sel ast.SelectionSet, obj *models.DiscoveryQueue) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, discoveryQueueImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DiscoveryQueue")
+		case "newReleases":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._DiscoveryQueue_newReleases(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var friendRequestImplementors = []string{"FriendRequest"}
 
 func (ec *executionContext) _FriendRequest(ctx context.Context, sel ast.SelectionSet, obj *models.FriendRequest) graphql.Marshaler {
@@ -11995,6 +12176,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "discoverQueue":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_discoverQueue(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "userByFriendCode":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -12524,6 +12719,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "status":
+			out.Values[i] = ec._User_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "summary":
 			out.Values[i] = ec._User_summary(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13080,6 +13280,20 @@ func (ec *executionContext) marshalNCountry2ᚖgithubᚗcomᚋbrandonᚑjulioᚑ
 func (ec *executionContext) unmarshalNCreateGame2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCreateGame(ctx context.Context, v interface{}) (models.CreateGame, error) {
 	res, err := ec.unmarshalInputCreateGame(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDiscoveryQueue2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐDiscoveryQueue(ctx context.Context, sel ast.SelectionSet, v models.DiscoveryQueue) graphql.Marshaler {
+	return ec._DiscoveryQueue(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDiscoveryQueue2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐDiscoveryQueue(ctx context.Context, sel ast.SelectionSet, v *models.DiscoveryQueue) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._DiscoveryQueue(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {

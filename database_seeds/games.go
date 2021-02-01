@@ -50,12 +50,12 @@ func SeedGames() error {
 			discount := float64(0)
 
 			if faker.Number().NumberInt(1)%2 == 0 {
-				discf, err := strconv.ParseFloat(faker.Number().Between(1, 80), 64)
+				disc, err := strconv.ParseFloat(faker.Number().Between(1, 80), 64)
 				if err != nil {
 					return err
 				}
 
-				discount = discf / float64(100)
+				discount = disc / float64(100)
 			}
 
 			if err := tx.Create(&models.Game{

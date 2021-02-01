@@ -31,6 +31,7 @@ type User struct {
 	UserProfilePicture   AssetFile
 	ProfileTheme         string
 	RealName             string
+	Status               string
 	Summary              string
 	WalletBalance        float64
 	UserWishlist         []*Game   `gorm:"many2many:wishlist;"`
@@ -45,11 +46,15 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 		return err
 	}
 
+	u.CustomURL = uuid.Must(uuid.NewRandom()).String()
+	u.DisplayName = u.AccountName
+	u.FriendCode = faker.Numerify("#########")
 	u.ProfileTheme = "#4B5563"
 	u.UserProfilePicture = AssetFile{File: defaultProfilePicture, ContentType: "image/png"}
-	u.DisplayName = u.AccountName
-	u.CustomURL = uuid.Must(uuid.NewRandom()).String()
-	u.FriendCode = faker.Numerify("#########")
+
+	if u.Status == "" {
+		u.Status = "offline"
+	}
 
 	return nil
 }
