@@ -34,6 +34,16 @@ type GamePagination struct {
 	TotalPages int64   `json:"totalPages"`
 }
 
+type GameReviewCommentInput struct {
+	ReviewID int64  `json:"reviewId"`
+	Body     string `json:"body"`
+}
+
+type GameReviewCommentPagination struct {
+	Data       []*GameReviewComment `json:"data"`
+	TotalPages int64                `json:"totalPages"`
+}
+
 type Gift struct {
 	UserID    int64  `json:"userId"`
 	FirstName string `json:"firstName"`

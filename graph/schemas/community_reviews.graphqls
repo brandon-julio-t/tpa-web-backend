@@ -1,0 +1,24 @@
+type GameReviewComment {
+    id: ID!
+    createdAt: Time!
+    body: String!
+    user: User!
+}
+
+type GameReviewCommentPagination {
+    data: [GameReviewComment!]!
+    totalPages: Int!
+}
+
+extend type GameReview {
+    comment(page: Int!): GameReviewCommentPagination!
+}
+
+input GameReviewCommentInput {
+    reviewId: ID!
+    body: String!
+}
+
+extend type Mutation {
+    postGameReviewComment(input: GameReviewCommentInput!): GameReviewComment!
+}

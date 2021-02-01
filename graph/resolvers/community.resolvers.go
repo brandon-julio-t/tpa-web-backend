@@ -25,7 +25,7 @@ func (r *communityResolver) ImagesAndVideos(ctx context.Context, obj *models.Com
 
 func (r *communityResolver) Review(ctx context.Context, obj *models.Community, id int64) (*models.GameReview, error) {
 	obj.CommunityReview = models.GameReview{}
-	return &obj.CommunityReview, facades.UseDB().First(&obj.CommunityImageAndVideo, id).Error
+	return &obj.CommunityReview, facades.UseDB().First(&obj.CommunityReview, id).Error
 }
 
 func (r *communityResolver) Reviews(ctx context.Context, obj *models.Community) ([]*models.GameReview, error) {
@@ -37,7 +37,7 @@ func (r *communityResolver) Reviews(ctx context.Context, obj *models.Community) 
 
 func (r *communityResolver) Discussion(ctx context.Context, obj *models.Community, id int64) (*models.CommunityDiscussion, error) {
 	obj.CommunityDiscussion = models.CommunityDiscussion{}
-	return &obj.CommunityDiscussion, facades.UseDB().First(&obj.CommunityImageAndVideo, id).Error
+	return &obj.CommunityDiscussion, facades.UseDB().First(&obj.CommunityDiscussion, id).Error
 }
 
 func (r *communityResolver) Discussions(ctx context.Context, obj *models.Community) ([]*models.CommunityDiscussion, error) {

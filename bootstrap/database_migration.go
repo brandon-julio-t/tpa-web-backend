@@ -32,6 +32,7 @@ func init() {
 		new(models.GameTag),
 		new(models.GameReview),
 		new(models.GameReviewVote),
+		new(models.GameReviewComment),
 
 		new(models.User),
 		new(models.Friendship),

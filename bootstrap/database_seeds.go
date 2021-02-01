@@ -18,6 +18,7 @@ func init() {
 			database_seeds.SeedTopUpCodes,
 			database_seeds.SeedGames,
 			database_seeds.SeedGameReviewVotes,
+			database_seeds.SeedGameReviewComments,
 			database_seeds.SeedGamePurchaseTransactions,
 			database_seeds.SeedGameGiftTransactions,
 			database_seeds.SeedCommunityImagesAndVideos,
