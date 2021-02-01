@@ -1,0 +1,12 @@
+type Community {
+    imageAndVideo(id: ID!): CommunityImageAndVideo!
+    imagesAndVideos: [CommunityImageAndVideo!]!
+    review(id: ID!): CommunityReview!
+    reviews: [CommunityReview!]!
+    discussion(id: ID!): CommunityDiscussion!
+    discussions: [CommunityDiscussion!]!
+}
+
+extend type Query {
+    community: Community!
+}

@@ -17,7 +17,7 @@ func init() {
 		log.Fatal(err)
 	}
 
-	if err := facades.UseDB().Migrator().DropTable(
+	entities := []interface{}{
 		new(models.AssetFile),
 		new(models.Country),
 		new(models.Promo),
@@ -44,39 +44,17 @@ func init() {
 		new(models.GamePurchaseTransactionDetail),
 		new(models.GameGiftTransactionHeader),
 		new(models.GameGiftTransactionDetail),
-	); err != nil {
+
+		new(models.CommunityImageAndVideo),
+		new(models.CommunityImageAndVideoComment),
+		new(models.CommunityImageAndVideoRating),
+	}
+
+	if err := facades.UseDB().Migrator().DropTable(entities...); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := facades.UseDB().AutoMigrate(
-		new(models.AssetFile),
-		new(models.Country),
-		new(models.Promo),
-		new(models.RegisterVerificationToken),
-		new(models.Report),
-		new(models.TopUpCode),
-		new(models.UnsuspendRequest),
-
-		new(models.Game),
-		new(models.GameGenre),
-		new(models.GameSlideshow),
-		new(models.GameTag),
-		new(models.GameReview),
-		new(models.GameReviewVote),
-
-		new(models.User),
-		new(models.Friendship),
-		new(models.FriendRequest),
-		new(models.PrivateMessage),
-		new(models.ProfileComment),
-		new(models.Notification),
-
-		new(models.GamePurchaseTransactionHeader),
-		new(models.GamePurchaseTransactionDetail),
-		new(models.GameGiftTransactionHeader),
-		new(models.GameGiftTransactionDetail),
-
-	); err != nil {
+	if err := facades.UseDB().AutoMigrate(entities...); err != nil {
 		log.Fatal(err)
 	}
 }

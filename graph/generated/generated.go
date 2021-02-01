@@ -37,6 +37,9 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Community() CommunityResolver
+	CommunityImageAndVideo() CommunityImageAndVideoResolver
+	CommunityImageAndVideoComment() CommunityImageAndVideoCommentResolver
 	DiscoveryQueue() DiscoveryQueueResolver
 	FriendRequest() FriendRequestResolver
 	Game() GameResolver
@@ -55,6 +58,50 @@ type ComplexityRoot struct {
 	AssetFile struct {
 		ContentType func(childComplexity int) int
 		ID          func(childComplexity int) int
+	}
+
+	Community struct {
+		Discussion      func(childComplexity int, id int64) int
+		Discussions     func(childComplexity int) int
+		ImageAndVideo   func(childComplexity int, id int64) int
+		ImagesAndVideos func(childComplexity int) int
+		Review          func(childComplexity int, id int64) int
+		Reviews         func(childComplexity int) int
+	}
+
+	CommunityDiscussion struct {
+		ID func(childComplexity int) int
+	}
+
+	CommunityImageAndVideo struct {
+		Comments    func(childComplexity int, page int64) int
+		CreatedAt   func(childComplexity int) int
+		Description func(childComplexity int) int
+		Dislikes    func(childComplexity int) int
+		File_       func(childComplexity int) int
+		ID          func(childComplexity int) int
+		IsDisliked  func(childComplexity int) int
+		IsLiked     func(childComplexity int) int
+		Likes       func(childComplexity int) int
+		Name        func(childComplexity int) int
+		User_       func(childComplexity int) int
+	}
+
+	CommunityImageAndVideoComment struct {
+		Body                     func(childComplexity int) int
+		CommunityImagesAndVideos func(childComplexity int) int
+		CreatedAt                func(childComplexity int) int
+		ID                       func(childComplexity int) int
+		User_                    func(childComplexity int) int
+	}
+
+	CommunityImageAndVideoCommentPagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
+	}
+
+	CommunityReview struct {
+		ID func(childComplexity int) int
 	}
 
 	Country struct {
@@ -127,48 +174,52 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AcceptFriendRequest      func(childComplexity int, userID int64) int
-		AddPrivateMessage        func(childComplexity int, friendID int64, text string) int
-		AddToCart                func(childComplexity int, gameID int64) int
-		AddToWishlist            func(childComplexity int, gameID int64) int
-		ApproveUnsuspendRequests func(childComplexity int, id int64) int
-		CheckoutWithCard         func(childComplexity int) int
-		CheckoutWithWallet       func(childComplexity int) int
-		ClearCart                func(childComplexity int) int
-		CreateGame               func(childComplexity int, input models.CreateGame) int
-		CreateProfileComment     func(childComplexity int, profileID int64, comment string) int
-		CreatePromo              func(childComplexity int, discount float64, endAt time.Time) int
-		CreateReview             func(childComplexity int, gameID int64, content string, isRecommended bool) int
-		DeleteGame               func(childComplexity int, id int64) int
-		DeleteNotification       func(childComplexity int, id int64) int
-		DeleteProfileComment     func(childComplexity int, id int64) int
-		DeletePromo              func(childComplexity int, id int64) int
-		DeleteReview             func(childComplexity int, id int64) int
-		DenyUnsuspendRequests    func(childComplexity int, id int64) int
-		DownVoteReview           func(childComplexity int, id int64) int
-		GiftWithCard             func(childComplexity int, input models.Gift) int
-		GiftWithWallet           func(childComplexity int, input models.Gift) int
-		JoinStream               func(childComplexity int, accountName string, rtcAnswer string) int
-		Login                    func(childComplexity int, accountName string, password string) int
-		Logout                   func(childComplexity int) int
-		NewIceCandidate          func(childComplexity int, accountName string, candidate string) int
-		RedeemWallet             func(childComplexity int, code string) int
-		Register                 func(childComplexity int, accountName string, email string, password string, countryID int64) int
-		RejectFriendRequest      func(childComplexity int, userID int64) int
-		RemoveFromCart           func(childComplexity int, gameID int64) int
-		RemoveFromWishlist       func(childComplexity int, gameID int64) int
-		SendFriendRequest        func(childComplexity int, userID int64) int
-		SendOtp                  func(childComplexity int, email string) int
-		StartStreaming           func(childComplexity int, rtcConnection string) int
-		StopStreaming            func(childComplexity int) int
-		SubmitReport             func(childComplexity int, userID int64, description string) int
-		SuspendAccount           func(childComplexity int, id int64) int
-		UnsuspendRequest         func(childComplexity int, accountName string) int
-		UpVoteReview             func(childComplexity int, id int64) int
-		UpdateGame               func(childComplexity int, input models.UpdateGame) int
-		UpdateProfile            func(childComplexity int, input *models.UpdateUser) int
-		UpdatePromo              func(childComplexity int, id int64, discount float64, endAt time.Time) int
-		VerifyOtp                func(childComplexity int, otp string) int
+		AcceptFriendRequest                   func(childComplexity int, userID int64) int
+		AddPrivateMessage                     func(childComplexity int, friendID int64, text string) int
+		AddToCart                             func(childComplexity int, gameID int64) int
+		AddToWishlist                         func(childComplexity int, gameID int64) int
+		ApproveUnsuspendRequests              func(childComplexity int, id int64) int
+		CheckoutWithCard                      func(childComplexity int) int
+		CheckoutWithWallet                    func(childComplexity int) int
+		ClearCart                             func(childComplexity int) int
+		CreateCommunityImagesAndVideos        func(childComplexity int, input models.CreateCommunityImageAndVideo) int
+		CreateGame                            func(childComplexity int, input models.CreateGame) int
+		CreateProfileComment                  func(childComplexity int, profileID int64, comment string) int
+		CreatePromo                           func(childComplexity int, discount float64, endAt time.Time) int
+		CreateReview                          func(childComplexity int, gameID int64, content string, isRecommended bool) int
+		DeleteGame                            func(childComplexity int, id int64) int
+		DeleteNotification                    func(childComplexity int, id int64) int
+		DeleteProfileComment                  func(childComplexity int, id int64) int
+		DeletePromo                           func(childComplexity int, id int64) int
+		DeleteReview                          func(childComplexity int, id int64) int
+		DenyUnsuspendRequests                 func(childComplexity int, id int64) int
+		DislikeCreateCommunityImagesAndVideos func(childComplexity int, imageAndVideoID int64) int
+		DownVoteReview                        func(childComplexity int, id int64) int
+		GiftWithCard                          func(childComplexity int, input models.Gift) int
+		GiftWithWallet                        func(childComplexity int, input models.Gift) int
+		JoinStream                            func(childComplexity int, accountName string, rtcAnswer string) int
+		LikeCreateCommunityImagesAndVideos    func(childComplexity int, imageAndVideoID int64) int
+		Login                                 func(childComplexity int, accountName string, password string) int
+		Logout                                func(childComplexity int) int
+		NewIceCandidate                       func(childComplexity int, accountName string, candidate string) int
+		PostCommunityImagesAndVideosComment   func(childComplexity int, imageAndVideoID int64, body string) int
+		RedeemWallet                          func(childComplexity int, code string) int
+		Register                              func(childComplexity int, accountName string, email string, password string, countryID int64) int
+		RejectFriendRequest                   func(childComplexity int, userID int64) int
+		RemoveFromCart                        func(childComplexity int, gameID int64) int
+		RemoveFromWishlist                    func(childComplexity int, gameID int64) int
+		SendFriendRequest                     func(childComplexity int, userID int64) int
+		SendOtp                               func(childComplexity int, email string) int
+		StartStreaming                        func(childComplexity int, rtcConnection string) int
+		StopStreaming                         func(childComplexity int) int
+		SubmitReport                          func(childComplexity int, userID int64, description string) int
+		SuspendAccount                        func(childComplexity int, id int64) int
+		UnsuspendRequest                      func(childComplexity int, accountName string) int
+		UpVoteReview                          func(childComplexity int, id int64) int
+		UpdateGame                            func(childComplexity int, input models.UpdateGame) int
+		UpdateProfile                         func(childComplexity int, input *models.UpdateUser) int
+		UpdatePromo                           func(childComplexity int, id int64, discount float64, endAt time.Time) int
+		VerifyOtp                             func(childComplexity int, otp string) int
 	}
 
 	Notification struct {
@@ -206,6 +257,7 @@ type ComplexityRoot struct {
 	Query struct {
 		AllCountries                func(childComplexity int) int
 		Auth                        func(childComplexity int) int
+		Community                   func(childComplexity int) int
 		CommunityRecommended        func(childComplexity int) int
 		DiscoverQueue               func(childComplexity int) int
 		FeaturedAndRecommendedGames func(childComplexity int) int
@@ -286,6 +338,26 @@ type ComplexityRoot struct {
 	}
 }
 
+type CommunityResolver interface {
+	ImageAndVideo(ctx context.Context, obj *models.Community, id int64) (*models.CommunityImageAndVideo, error)
+	ImagesAndVideos(ctx context.Context, obj *models.Community) ([]*models.CommunityImageAndVideo, error)
+	Review(ctx context.Context, obj *models.Community, id int64) (*models.CommunityReview, error)
+	Reviews(ctx context.Context, obj *models.Community) ([]*models.CommunityReview, error)
+	Discussion(ctx context.Context, obj *models.Community, id int64) (*models.CommunityDiscussion, error)
+	Discussions(ctx context.Context, obj *models.Community) ([]*models.CommunityDiscussion, error)
+}
+type CommunityImageAndVideoResolver interface {
+	Comments(ctx context.Context, obj *models.CommunityImageAndVideo, page int64) (*models.CommunityImageAndVideoCommentPagination, error)
+
+	Dislikes(ctx context.Context, obj *models.CommunityImageAndVideo) (int64, error)
+
+	IsDisliked(ctx context.Context, obj *models.CommunityImageAndVideo) (bool, error)
+	IsLiked(ctx context.Context, obj *models.CommunityImageAndVideo) (bool, error)
+	Likes(ctx context.Context, obj *models.CommunityImageAndVideo) (int64, error)
+}
+type CommunityImageAndVideoCommentResolver interface {
+	CommunityImagesAndVideos(ctx context.Context, obj *models.CommunityImageAndVideoComment) (*models.CommunityImageAndVideo, error)
+}
 type DiscoveryQueueResolver interface {
 	NewReleases(ctx context.Context, obj *models.DiscoveryQueue) ([]*models.Game, error)
 }
@@ -325,6 +397,10 @@ type MutationResolver interface {
 	CheckoutWithCard(ctx context.Context) (float64, error)
 	GiftWithWallet(ctx context.Context, input models.Gift) (float64, error)
 	GiftWithCard(ctx context.Context, input models.Gift) (float64, error)
+	CreateCommunityImagesAndVideos(ctx context.Context, input models.CreateCommunityImageAndVideo) (*models.CommunityImageAndVideo, error)
+	LikeCreateCommunityImagesAndVideos(ctx context.Context, imageAndVideoID int64) (*models.CommunityImageAndVideo, error)
+	DislikeCreateCommunityImagesAndVideos(ctx context.Context, imageAndVideoID int64) (*models.CommunityImageAndVideo, error)
+	PostCommunityImagesAndVideosComment(ctx context.Context, imageAndVideoID int64, body string) (*models.CommunityImageAndVideoComment, error)
 	SendFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	AcceptFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	RejectFriendRequest(ctx context.Context, userID int64) (*models.User, error)
@@ -362,6 +438,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
+	Community(ctx context.Context) (*models.Community, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
 	DiscoverQueue(ctx context.Context) (*models.DiscoveryQueue, error)
 	UserByFriendCode(ctx context.Context, code string) (*models.User, error)
@@ -443,6 +520,208 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AssetFile.ID(childComplexity), true
+
+	case "Community.discussion":
+		if e.complexity.Community.Discussion == nil {
+			break
+		}
+
+		args, err := ec.field_Community_discussion_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Community.Discussion(childComplexity, args["id"].(int64)), true
+
+	case "Community.discussions":
+		if e.complexity.Community.Discussions == nil {
+			break
+		}
+
+		return e.complexity.Community.Discussions(childComplexity), true
+
+	case "Community.imageAndVideo":
+		if e.complexity.Community.ImageAndVideo == nil {
+			break
+		}
+
+		args, err := ec.field_Community_imageAndVideo_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Community.ImageAndVideo(childComplexity, args["id"].(int64)), true
+
+	case "Community.imagesAndVideos":
+		if e.complexity.Community.ImagesAndVideos == nil {
+			break
+		}
+
+		return e.complexity.Community.ImagesAndVideos(childComplexity), true
+
+	case "Community.review":
+		if e.complexity.Community.Review == nil {
+			break
+		}
+
+		args, err := ec.field_Community_review_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Community.Review(childComplexity, args["id"].(int64)), true
+
+	case "Community.reviews":
+		if e.complexity.Community.Reviews == nil {
+			break
+		}
+
+		return e.complexity.Community.Reviews(childComplexity), true
+
+	case "CommunityDiscussion.id":
+		if e.complexity.CommunityDiscussion.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.ID(childComplexity), true
+
+	case "CommunityImageAndVideo.comments":
+		if e.complexity.CommunityImageAndVideo.Comments == nil {
+			break
+		}
+
+		args, err := ec.field_CommunityImageAndVideo_comments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.CommunityImageAndVideo.Comments(childComplexity, args["page"].(int64)), true
+
+	case "CommunityImageAndVideo.createdAt":
+		if e.complexity.CommunityImageAndVideo.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.CreatedAt(childComplexity), true
+
+	case "CommunityImageAndVideo.description":
+		if e.complexity.CommunityImageAndVideo.Description == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.Description(childComplexity), true
+
+	case "CommunityImageAndVideo.dislikes":
+		if e.complexity.CommunityImageAndVideo.Dislikes == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.Dislikes(childComplexity), true
+
+	case "CommunityImageAndVideo.file":
+		if e.complexity.CommunityImageAndVideo.File_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.File_(childComplexity), true
+
+	case "CommunityImageAndVideo.id":
+		if e.complexity.CommunityImageAndVideo.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.ID(childComplexity), true
+
+	case "CommunityImageAndVideo.isDisliked":
+		if e.complexity.CommunityImageAndVideo.IsDisliked == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.IsDisliked(childComplexity), true
+
+	case "CommunityImageAndVideo.isLiked":
+		if e.complexity.CommunityImageAndVideo.IsLiked == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.IsLiked(childComplexity), true
+
+	case "CommunityImageAndVideo.likes":
+		if e.complexity.CommunityImageAndVideo.Likes == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.Likes(childComplexity), true
+
+	case "CommunityImageAndVideo.name":
+		if e.complexity.CommunityImageAndVideo.Name == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.Name(childComplexity), true
+
+	case "CommunityImageAndVideo.user":
+		if e.complexity.CommunityImageAndVideo.User_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideo.User_(childComplexity), true
+
+	case "CommunityImageAndVideoComment.body":
+		if e.complexity.CommunityImageAndVideoComment.Body == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoComment.Body(childComplexity), true
+
+	case "CommunityImageAndVideoComment.communityImagesAndVideos":
+		if e.complexity.CommunityImageAndVideoComment.CommunityImagesAndVideos == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoComment.CommunityImagesAndVideos(childComplexity), true
+
+	case "CommunityImageAndVideoComment.createdAt":
+		if e.complexity.CommunityImageAndVideoComment.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoComment.CreatedAt(childComplexity), true
+
+	case "CommunityImageAndVideoComment.id":
+		if e.complexity.CommunityImageAndVideoComment.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoComment.ID(childComplexity), true
+
+	case "CommunityImageAndVideoComment.user":
+		if e.complexity.CommunityImageAndVideoComment.User_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoComment.User_(childComplexity), true
+
+	case "CommunityImageAndVideoCommentPagination.data":
+		if e.complexity.CommunityImageAndVideoCommentPagination.Data == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoCommentPagination.Data(childComplexity), true
+
+	case "CommunityImageAndVideoCommentPagination.totalPages":
+		if e.complexity.CommunityImageAndVideoCommentPagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.CommunityImageAndVideoCommentPagination.TotalPages(childComplexity), true
+
+	case "CommunityReview.id":
+		if e.complexity.CommunityReview.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityReview.ID(childComplexity), true
 
 	case "Country.id":
 		if e.complexity.Country.ID == nil {
@@ -819,6 +1098,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.ClearCart(childComplexity), true
 
+	case "Mutation.createCommunityImagesAndVideos":
+		if e.complexity.Mutation.CreateCommunityImagesAndVideos == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCommunityImagesAndVideos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCommunityImagesAndVideos(childComplexity, args["input"].(models.CreateCommunityImageAndVideo)), true
+
 	case "Mutation.createGame":
 		if e.complexity.Mutation.CreateGame == nil {
 			break
@@ -939,6 +1230,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DenyUnsuspendRequests(childComplexity, args["id"].(int64)), true
 
+	case "Mutation.dislikeCreateCommunityImagesAndVideos":
+		if e.complexity.Mutation.DislikeCreateCommunityImagesAndVideos == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_dislikeCreateCommunityImagesAndVideos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DislikeCreateCommunityImagesAndVideos(childComplexity, args["imageAndVideoId"].(int64)), true
+
 	case "Mutation.downVoteReview":
 		if e.complexity.Mutation.DownVoteReview == nil {
 			break
@@ -987,6 +1290,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.JoinStream(childComplexity, args["accountName"].(string), args["rtcAnswer"].(string)), true
 
+	case "Mutation.likeCreateCommunityImagesAndVideos":
+		if e.complexity.Mutation.LikeCreateCommunityImagesAndVideos == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_likeCreateCommunityImagesAndVideos_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.LikeCreateCommunityImagesAndVideos(childComplexity, args["imageAndVideoId"].(int64)), true
+
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -1017,6 +1332,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.NewIceCandidate(childComplexity, args["accountName"].(string), args["candidate"].(string)), true
+
+	case "Mutation.postCommunityImagesAndVideosComment":
+		if e.complexity.Mutation.PostCommunityImagesAndVideosComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_postCommunityImagesAndVideosComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PostCommunityImagesAndVideosComment(childComplexity, args["imageAndVideoId"].(int64), args["body"].(string)), true
 
 	case "Mutation.redeemWallet":
 		if e.complexity.Mutation.RedeemWallet == nil {
@@ -1349,6 +1676,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Auth(childComplexity), true
+
+	case "Query.community":
+		if e.complexity.Query.Community == nil {
+			break
+		}
+
+		return e.complexity.Query.Community(childComplexity), true
 
 	case "Query.communityRecommended":
 		if e.complexity.Query.CommunityRecommended == nil {
@@ -1992,6 +2326,66 @@ input Gift {
     signature: String!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/community.graphqls", Input: `type Community {
+    imageAndVideo(id: ID!): CommunityImageAndVideo!
+    imagesAndVideos: [CommunityImageAndVideo!]!
+    review(id: ID!): CommunityReview!
+    reviews: [CommunityReview!]!
+    discussion(id: ID!): CommunityDiscussion!
+    discussions: [CommunityDiscussion!]!
+}
+
+extend type Query {
+    community: Community!
+}`, BuiltIn: false},
+	{Name: "graph/schemas/community_discussions.graphqls", Input: `type CommunityDiscussion {
+    id: ID!
+}
+`, BuiltIn: false},
+	{Name: "graph/schemas/community_images_and_videos.graphqls", Input: `type CommunityImageAndVideoComment {
+    id: ID!
+    body: String!
+    communityImagesAndVideos: CommunityImageAndVideo!
+    createdAt: Time!
+    user: User!
+}
+
+type CommunityImageAndVideoCommentPagination {
+    data: [CommunityImageAndVideoComment!]!
+    totalPages: Int!
+}
+
+type CommunityImageAndVideo {
+    id: ID!
+    comments(page: Int!): CommunityImageAndVideoCommentPagination!
+    createdAt: Time!
+    description: String!
+    dislikes: Int!
+    file: AssetFile!
+    isDisliked: Boolean!
+    isLiked: Boolean!
+    likes: Int!
+    user: User!
+    name: String!
+}
+
+input CreateCommunityImageAndVideo {
+    description: String!
+    file: Upload!
+    name: String!
+}
+
+extend type Mutation {
+    createCommunityImagesAndVideos(input: CreateCommunityImageAndVideo!): CommunityImageAndVideo!
+    likeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
+    dislikeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
+    postCommunityImagesAndVideosComment(imageAndVideoId: ID!, body: String!): CommunityImageAndVideoComment!
+}
+`, BuiltIn: false},
+	{Name: "graph/schemas/community_reviews.graphqls", Input: `type CommunityReview {
+    id: ID!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/country.graphqls", Input: `type Country {
     id: ID!
     name: String!
@@ -2343,6 +2737,66 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_CommunityImageAndVideo_comments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Community_discussion_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Community_imageAndVideo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Community_review_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_acceptFriendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2424,6 +2878,21 @@ func (ec *executionContext) field_Mutation_approveUnsuspendRequests_args(ctx con
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createCommunityImagesAndVideos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.CreateCommunityImageAndVideo
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNCreateCommunityImageAndVideo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCreateCommunityImageAndVideo(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -2613,6 +3082,21 @@ func (ec *executionContext) field_Mutation_denyUnsuspendRequests_args(ctx contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_dislikeCreateCommunityImagesAndVideos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["imageAndVideoId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageAndVideoId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["imageAndVideoId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_downVoteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2682,6 +3166,21 @@ func (ec *executionContext) field_Mutation_joinStream_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_likeCreateCommunityImagesAndVideos_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["imageAndVideoId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageAndVideoId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["imageAndVideoId"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -2727,6 +3226,30 @@ func (ec *executionContext) field_Mutation_newIceCandidate_args(ctx context.Cont
 		}
 	}
 	args["candidate"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_postCommunityImagesAndVideosComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["imageAndVideoId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("imageAndVideoId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["imageAndVideoId"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["body"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("body"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["body"] = arg1
 	return args, nil
 }
 
@@ -3391,6 +3914,944 @@ func (ec *executionContext) _AssetFile_contentType(ctx context.Context, field gr
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_imageAndVideo(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Community_imageAndVideo_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().ImageAndVideo(rctx, obj, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_imagesAndVideos(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().ImagesAndVideos(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_review(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Community_review_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().Review(rctx, obj, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityReview)
+	fc.Result = res
+	return ec.marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_reviews(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().Reviews(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityReview)
+	fc.Result = res
+	return ec.marshalNCommunityReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReviewᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_discussion(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Community_discussion_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().Discussion(rctx, obj, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Community_discussions(ctx context.Context, field graphql.CollectedField, obj *models.Community) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Community",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Community().Discussions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_comments(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_CommunityImageAndVideo_comments_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideo().Comments(rctx, obj, args["page"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideoCommentPagination)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideoCommentPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoCommentPagination(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_description(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_dislikes(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideo().Dislikes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_file(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.File_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.AssetFile)
+	fc.Result = res
+	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_isDisliked(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideo().IsDisliked(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_isLiked(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideo().IsLiked(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_likes(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideo().Likes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_user(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideo_name(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideo",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoComment_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoComment_body(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Body, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoComment_communityImagesAndVideos(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityImageAndVideoComment().CommunityImagesAndVideos(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoComment_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoComment_user(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoCommentPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoCommentPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoCommentPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityImageAndVideoComment)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideoComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoCommentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityImageAndVideoCommentPagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideoCommentPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityImageAndVideoCommentPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityReview_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityReview) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityReview",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Country_id(ctx context.Context, field graphql.CollectedField, obj *models.Country) (ret graphql.Marshaler) {
@@ -5211,6 +6672,174 @@ func (ec *executionContext) _Mutation_giftWithCard(ctx context.Context, field gr
 	res := resTmp.(float64)
 	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createCommunityImagesAndVideos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createCommunityImagesAndVideos_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCommunityImagesAndVideos(rctx, args["input"].(models.CreateCommunityImageAndVideo))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_likeCreateCommunityImagesAndVideos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_likeCreateCommunityImagesAndVideos_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().LikeCreateCommunityImagesAndVideos(rctx, args["imageAndVideoId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_dislikeCreateCommunityImagesAndVideos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_dislikeCreateCommunityImagesAndVideos_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DislikeCreateCommunityImagesAndVideos(rctx, args["imageAndVideoId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideo)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_postCommunityImagesAndVideosComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_postCommunityImagesAndVideosComment_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PostCommunityImagesAndVideosComment(rctx, args["imageAndVideoId"].(int64), args["body"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityImageAndVideoComment)
+	fc.Result = res
+	return ec.marshalNCommunityImageAndVideoComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_sendFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7252,6 +8881,41 @@ func (ec *executionContext) _Query_refreshToken(ctx context.Context, field graph
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_community(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Community(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Community)
+	fc.Result = res
+	return ec.marshalNCommunity2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_allCountries(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10812,6 +12476,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateCommunityImageAndVideo(ctx context.Context, obj interface{}) (models.CreateCommunityImageAndVideo, error) {
+	var it models.CreateCommunityImageAndVideo
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "file":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("file"))
+			it.File, err = ec.unmarshalNUpload2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateGame(ctx context.Context, obj interface{}) (models.CreateGame, error) {
 	var it models.CreateGame
 	var asMap = obj.(map[string]interface{})
@@ -11134,6 +12834,376 @@ func (ec *executionContext) _AssetFile(ctx context.Context, sel ast.SelectionSet
 			}
 		case "contentType":
 			out.Values[i] = ec._AssetFile_contentType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityImplementors = []string{"Community"}
+
+func (ec *executionContext) _Community(ctx context.Context, sel ast.SelectionSet, obj *models.Community) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Community")
+		case "imageAndVideo":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_imageAndVideo(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "imagesAndVideos":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_imagesAndVideos(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "review":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_review(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "reviews":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_reviews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "discussion":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_discussion(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "discussions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Community_discussions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityDiscussionImplementors = []string{"CommunityDiscussion"}
+
+func (ec *executionContext) _CommunityDiscussion(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityDiscussion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityDiscussionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityDiscussion")
+		case "id":
+			out.Values[i] = ec._CommunityDiscussion_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityImageAndVideoImplementors = []string{"CommunityImageAndVideo"}
+
+func (ec *executionContext) _CommunityImageAndVideo(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityImageAndVideo) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityImageAndVideoImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityImageAndVideo")
+		case "id":
+			out.Values[i] = ec._CommunityImageAndVideo_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "comments":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideo_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "createdAt":
+			out.Values[i] = ec._CommunityImageAndVideo_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._CommunityImageAndVideo_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "dislikes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideo_dislikes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "file":
+			out.Values[i] = ec._CommunityImageAndVideo_file(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "isDisliked":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideo_isDisliked(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "isLiked":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideo_isLiked(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "likes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideo_likes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "user":
+			out.Values[i] = ec._CommunityImageAndVideo_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._CommunityImageAndVideo_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityImageAndVideoCommentImplementors = []string{"CommunityImageAndVideoComment"}
+
+func (ec *executionContext) _CommunityImageAndVideoComment(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityImageAndVideoComment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityImageAndVideoCommentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityImageAndVideoComment")
+		case "id":
+			out.Values[i] = ec._CommunityImageAndVideoComment_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "body":
+			out.Values[i] = ec._CommunityImageAndVideoComment_body(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "communityImagesAndVideos":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityImageAndVideoComment_communityImagesAndVideos(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "createdAt":
+			out.Values[i] = ec._CommunityImageAndVideoComment_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			out.Values[i] = ec._CommunityImageAndVideoComment_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityImageAndVideoCommentPaginationImplementors = []string{"CommunityImageAndVideoCommentPagination"}
+
+func (ec *executionContext) _CommunityImageAndVideoCommentPagination(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityImageAndVideoCommentPagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityImageAndVideoCommentPaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityImageAndVideoCommentPagination")
+		case "data":
+			out.Values[i] = ec._CommunityImageAndVideoCommentPagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._CommunityImageAndVideoCommentPagination_totalPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityReviewImplementors = []string{"CommunityReview"}
+
+func (ec *executionContext) _CommunityReview(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityReview) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityReviewImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityReview")
+		case "id":
+			out.Values[i] = ec._CommunityReview_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -11751,6 +13821,26 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createCommunityImagesAndVideos":
+			out.Values[i] = ec._Mutation_createCommunityImagesAndVideos(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "likeCreateCommunityImagesAndVideos":
+			out.Values[i] = ec._Mutation_likeCreateCommunityImagesAndVideos(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "dislikeCreateCommunityImagesAndVideos":
+			out.Values[i] = ec._Mutation_dislikeCreateCommunityImagesAndVideos(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "postCommunityImagesAndVideosComment":
+			out.Values[i] = ec._Mutation_postCommunityImagesAndVideosComment(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "sendFriendRequest":
 			out.Values[i] = ec._Mutation_sendFriendRequest(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -12157,6 +14247,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_refreshToken(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "community":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_community(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -13226,6 +15330,238 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCommunity2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunity(ctx context.Context, sel ast.SelectionSet, v models.Community) graphql.Marshaler {
+	return ec._Community(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunity2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunity(ctx context.Context, sel ast.SelectionSet, v *models.Community) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Community(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityDiscussion2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx context.Context, sel ast.SelectionSet, v models.CommunityDiscussion) graphql.Marshaler {
+	return ec._CommunityDiscussion(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityDiscussion2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityDiscussion) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx context.Context, sel ast.SelectionSet, v *models.CommunityDiscussion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityDiscussion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx context.Context, sel ast.SelectionSet, v models.CommunityImageAndVideo) graphql.Marshaler {
+	return ec._CommunityImageAndVideo(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideo2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityImageAndVideo) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideo2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx context.Context, sel ast.SelectionSet, v *models.CommunityImageAndVideo) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityImageAndVideo(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideoComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoComment(ctx context.Context, sel ast.SelectionSet, v models.CommunityImageAndVideoComment) graphql.Marshaler {
+	return ec._CommunityImageAndVideoComment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideoComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityImageAndVideoComment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommunityImageAndVideoComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideoComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoComment(ctx context.Context, sel ast.SelectionSet, v *models.CommunityImageAndVideoComment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityImageAndVideoComment(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideoCommentPagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoCommentPagination(ctx context.Context, sel ast.SelectionSet, v models.CommunityImageAndVideoCommentPagination) graphql.Marshaler {
+	return ec._CommunityImageAndVideoCommentPagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityImageAndVideoCommentPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideoCommentPagination(ctx context.Context, sel ast.SelectionSet, v *models.CommunityImageAndVideoCommentPagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityImageAndVideoCommentPagination(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityReview2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx context.Context, sel ast.SelectionSet, v models.CommunityReview) graphql.Marshaler {
+	return ec._CommunityReview(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityReview2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReviewᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityReview) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCommunityReview2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityReview(ctx context.Context, sel ast.SelectionSet, v *models.CommunityReview) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityReview(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNCountry2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountry(ctx context.Context, sel ast.SelectionSet, v models.Country) graphql.Marshaler {
 	return ec._Country(ctx, sel, &v)
 }
@@ -13275,6 +15611,11 @@ func (ec *executionContext) marshalNCountry2ᚖgithubᚗcomᚋbrandonᚑjulioᚑ
 		return graphql.Null
 	}
 	return ec._Country(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNCreateCommunityImageAndVideo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCreateCommunityImageAndVideo(ctx context.Context, v interface{}) (models.CreateCommunityImageAndVideo, error) {
+	res, err := ec.unmarshalInputCreateCommunityImageAndVideo(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNCreateGame2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCreateGame(ctx context.Context, v interface{}) (models.CreateGame, error) {

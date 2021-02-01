@@ -6,6 +6,17 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type CommunityImageAndVideoCommentPagination struct {
+	Data       []*CommunityImageAndVideoComment `json:"data"`
+	TotalPages int64                            `json:"totalPages"`
+}
+
+type CreateCommunityImageAndVideo struct {
+	Description string         `json:"description"`
+	File        graphql.Upload `json:"file"`
+	Name        string         `json:"name"`
+}
+
 type CreateGame struct {
 	Title              string            `json:"title"`
 	Description        string            `json:"description"`

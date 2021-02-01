@@ -1,0 +1,39 @@
+type CommunityImageAndVideoComment {
+    id: ID!
+    body: String!
+    communityImagesAndVideos: CommunityImageAndVideo!
+    createdAt: Time!
+    user: User!
+}
+
+type CommunityImageAndVideoCommentPagination {
+    data: [CommunityImageAndVideoComment!]!
+    totalPages: Int!
+}
+
+type CommunityImageAndVideo {
+    id: ID!
+    comments(page: Int!): CommunityImageAndVideoCommentPagination!
+    createdAt: Time!
+    description: String!
+    dislikes: Int!
+    file: AssetFile!
+    isDisliked: Boolean!
+    isLiked: Boolean!
+    likes: Int!
+    user: User!
+    name: String!
+}
+
+input CreateCommunityImageAndVideo {
+    description: String!
+    file: Upload!
+    name: String!
+}
+
+extend type Mutation {
+    createCommunityImagesAndVideos(input: CreateCommunityImageAndVideo!): CommunityImageAndVideo!
+    likeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
+    dislikeCreateCommunityImagesAndVideos(imageAndVideoId: ID!): CommunityImageAndVideo!
+    postCommunityImagesAndVideosComment(imageAndVideoId: ID!, body: String!): CommunityImageAndVideoComment!
+}

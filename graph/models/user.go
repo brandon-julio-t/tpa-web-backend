@@ -29,6 +29,7 @@ type User struct {
 	Password             string
 	UserProfilePictureID int64
 	UserProfilePicture   AssetFile
+	Points               int64
 	ProfileTheme         string
 	RealName             string
 	Status               string
