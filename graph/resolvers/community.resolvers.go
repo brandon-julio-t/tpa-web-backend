@@ -42,7 +42,7 @@ func (r *communityResolver) Discussion(ctx context.Context, obj *models.Communit
 
 func (r *communityResolver) Discussions(ctx context.Context, obj *models.Community) ([]*models.CommunityDiscussion, error) {
 	obj.CommunityDiscussions = make([]*models.CommunityDiscussion, 0)
-	return obj.CommunityDiscussions, nil
+	return obj.CommunityDiscussions, facades.UseDB().Find(&obj.CommunityDiscussions).Error
 }
 
 func (r *queryResolver) Community(ctx context.Context) (*models.Community, error) {

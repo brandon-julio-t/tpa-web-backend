@@ -1,3 +1,48 @@
 type CommunityDiscussion {
     id: ID!
+    body: String!
+    comments(page: Int!): CommunityDiscussionCommentPagination!
+    createdAt: Time!
+    game: Game!
+    title: String!
+    user: User!
+}
+
+type CommunityDiscussionCommentPagination {
+    data: [CommunityDiscussionComment!]!
+    totalPages: Int!
+}
+
+type CommunityDiscussionComment {
+    id: ID!
+    body: String!
+    communityDiscussion: CommunityDiscussion!
+    createdAt: Time!
+    user: User!
+}
+
+extend type Game {
+    topDiscussions: [CommunityDiscussion!]!
+    discussions: [CommunityDiscussion!]!
+}
+
+extend type Query {
+    gameDiscussion(id: ID!): CommunityDiscussion
+    gameDiscussions(title: String!): [Game!]!
+}
+
+extend type Mutation {
+    postCommunityDiscussion(input: PostCommunityDiscussion!): CommunityDiscussion!
+    postCommunityDiscussionComment(input: PostCommunityDiscussionComment!): CommunityDiscussionComment!
+}
+
+input PostCommunityDiscussion {
+    gameId: ID!
+    body: String!
+    title: String!
+}
+
+input PostCommunityDiscussionComment {
+    communityDiscussionId: ID!
+    body: String!
 }

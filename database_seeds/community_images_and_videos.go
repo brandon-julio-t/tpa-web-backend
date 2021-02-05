@@ -10,7 +10,7 @@ import (
 )
 
 func SeedCommunityImagesAndVideos() error {
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 10; i++ {
 		isImage := faker.Number().NumberInt(1)%2 == 0
 		file := make([]byte, 0)
 		contentType := ""

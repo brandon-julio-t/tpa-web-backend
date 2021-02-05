@@ -42,7 +42,7 @@ func (r *communityImageAndVideoResolver) Dislikes(ctx context.Context, obj *mode
 	return *count, facades.UseDB().
 		Model(new(models.CommunityImageAndVideoRating)).
 		Where("community_image_and_video_id = ?", obj.ID).
-		Where("is_like = ?", true).
+		Where("is_like = ?", false).
 		Count(count).
 		Error
 }
@@ -84,7 +84,7 @@ func (r *communityImageAndVideoResolver) Likes(ctx context.Context, obj *models.
 	return *count, facades.UseDB().
 		Model(new(models.CommunityImageAndVideoRating)).
 		Where("community_image_and_video_id = ?", obj.ID).
-		Where("is_like = ?", false).
+		Where("is_like = ?", true).
 		Count(count).
 		Error
 }

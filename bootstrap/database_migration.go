@@ -1,9 +1,10 @@
 package bootstrap
 
 import (
+	"log"
+
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
-	"log"
 )
 
 func init() {
@@ -49,6 +50,8 @@ func init() {
 		new(models.CommunityImageAndVideo),
 		new(models.CommunityImageAndVideoComment),
 		new(models.CommunityImageAndVideoRating),
+		new(models.CommunityDiscussion),
+		new(models.CommunityDiscussionComment),
 	}
 
 	if err := facades.UseDB().Migrator().DropTable(entities...); err != nil {

@@ -6,6 +6,11 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type CommunityDiscussionCommentPagination struct {
+	Data       []*CommunityDiscussionComment `json:"data"`
+	TotalPages int64                         `json:"totalPages"`
+}
+
 type CommunityImageAndVideoCommentPagination struct {
 	Data       []*CommunityImageAndVideoComment `json:"data"`
 	TotalPages int64                            `json:"totalPages"`
@@ -50,6 +55,17 @@ type Gift struct {
 	Message   string `json:"message"`
 	Sentiment string `json:"sentiment"`
 	Signature string `json:"signature"`
+}
+
+type PostCommunityDiscussion struct {
+	GameID int64  `json:"gameId"`
+	Body   string `json:"body"`
+	Title  string `json:"title"`
+}
+
+type PostCommunityDiscussionComment struct {
+	CommunityDiscussionID int64  `json:"communityDiscussionId"`
+	Body                  string `json:"body"`
 }
 
 type PromoPagination struct {

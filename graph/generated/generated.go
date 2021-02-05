@@ -38,6 +38,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Community() CommunityResolver
+	CommunityDiscussion() CommunityDiscussionResolver
 	CommunityImageAndVideo() CommunityImageAndVideoResolver
 	CommunityImageAndVideoComment() CommunityImageAndVideoCommentResolver
 	DiscoveryQueue() DiscoveryQueueResolver
@@ -70,7 +71,26 @@ type ComplexityRoot struct {
 	}
 
 	CommunityDiscussion struct {
-		ID func(childComplexity int) int
+		Body      func(childComplexity int) int
+		Comments  func(childComplexity int, page int64) int
+		CreatedAt func(childComplexity int) int
+		Game_     func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Title     func(childComplexity int) int
+		User_     func(childComplexity int) int
+	}
+
+	CommunityDiscussionComment struct {
+		Body                 func(childComplexity int) int
+		CommunityDiscussion_ func(childComplexity int) int
+		CreatedAt            func(childComplexity int) int
+		ID                   func(childComplexity int) int
+		User_                func(childComplexity int) int
+	}
+
+	CommunityDiscussionCommentPagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
 	}
 
 	CommunityImageAndVideo struct {
@@ -122,6 +142,7 @@ type ComplexityRoot struct {
 		Description        func(childComplexity int) int
 		Developer          func(childComplexity int) int
 		Discount           func(childComplexity int) int
+		Discussions        func(childComplexity int) int
 		Genre              func(childComplexity int) int
 		ID                 func(childComplexity int) int
 		IsInCart           func(childComplexity int) int
@@ -135,6 +156,7 @@ type ComplexityRoot struct {
 		SystemRequirements func(childComplexity int) int
 		Tags               func(childComplexity int) int
 		Title              func(childComplexity int) int
+		TopDiscussions     func(childComplexity int) int
 	}
 
 	GameGenre struct {
@@ -212,6 +234,8 @@ type ComplexityRoot struct {
 		Login                                 func(childComplexity int, accountName string, password string) int
 		Logout                                func(childComplexity int) int
 		NewIceCandidate                       func(childComplexity int, accountName string, candidate string) int
+		PostCommunityDiscussion               func(childComplexity int, input models.PostCommunityDiscussion) int
+		PostCommunityDiscussionComment        func(childComplexity int, input models.PostCommunityDiscussionComment) int
 		PostCommunityImagesAndVideosComment   func(childComplexity int, imageAndVideoID int64, body string) int
 		PostGameReviewComment                 func(childComplexity int, input models.GameReviewCommentInput) int
 		RedeemWallet                          func(childComplexity int, code string) int
@@ -267,11 +291,14 @@ type ComplexityRoot struct {
 
 	Query struct {
 		AllCountries                func(childComplexity int) int
+		AllGames                    func(childComplexity int) int
 		Auth                        func(childComplexity int) int
 		Community                   func(childComplexity int) int
 		CommunityRecommended        func(childComplexity int) int
 		DiscoverQueue               func(childComplexity int) int
 		FeaturedAndRecommendedGames func(childComplexity int) int
+		GameDiscussion              func(childComplexity int, id int64) int
+		GameDiscussions             func(childComplexity int, title string) int
 		Games                       func(childComplexity int, page int64) int
 		Genres                      func(childComplexity int) int
 		GetAllGameTags              func(childComplexity int) int
@@ -357,6 +384,9 @@ type CommunityResolver interface {
 	Discussion(ctx context.Context, obj *models.Community, id int64) (*models.CommunityDiscussion, error)
 	Discussions(ctx context.Context, obj *models.Community) ([]*models.CommunityDiscussion, error)
 }
+type CommunityDiscussionResolver interface {
+	Comments(ctx context.Context, obj *models.CommunityDiscussion, page int64) (*models.CommunityDiscussionCommentPagination, error)
+}
 type CommunityImageAndVideoResolver interface {
 	Comments(ctx context.Context, obj *models.CommunityImageAndVideo, page int64) (*models.CommunityImageAndVideoCommentPagination, error)
 
@@ -384,6 +414,8 @@ type GameResolver interface {
 
 	Tags(ctx context.Context, obj *models.Game) ([]*models.GameTag, error)
 
+	TopDiscussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
+	Discussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
 	MostHelpfulReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
 	RecentReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
 }
@@ -410,6 +442,8 @@ type MutationResolver interface {
 	CheckoutWithCard(ctx context.Context) (float64, error)
 	GiftWithWallet(ctx context.Context, input models.Gift) (float64, error)
 	GiftWithCard(ctx context.Context, input models.Gift) (float64, error)
+	PostCommunityDiscussion(ctx context.Context, input models.PostCommunityDiscussion) (*models.CommunityDiscussion, error)
+	PostCommunityDiscussionComment(ctx context.Context, input models.PostCommunityDiscussionComment) (*models.CommunityDiscussionComment, error)
 	CreateCommunityImagesAndVideos(ctx context.Context, input models.CreateCommunityImageAndVideo) (*models.CommunityImageAndVideo, error)
 	LikeCreateCommunityImagesAndVideos(ctx context.Context, imageAndVideoID int64) (*models.CommunityImageAndVideo, error)
 	DislikeCreateCommunityImagesAndVideos(ctx context.Context, imageAndVideoID int64) (*models.CommunityImageAndVideo, error)
@@ -453,9 +487,12 @@ type QueryResolver interface {
 	Auth(ctx context.Context) (*models.User, error)
 	RefreshToken(ctx context.Context) (bool, error)
 	Community(ctx context.Context) (*models.Community, error)
+	GameDiscussion(ctx context.Context, id int64) (*models.CommunityDiscussion, error)
+	GameDiscussions(ctx context.Context, title string) ([]*models.Game, error)
 	AllCountries(ctx context.Context) ([]*models.Country, error)
 	DiscoverQueue(ctx context.Context) (*models.DiscoveryQueue, error)
 	UserByFriendCode(ctx context.Context, code string) (*models.User, error)
+	AllGames(ctx context.Context) ([]*models.Game, error)
 	CommunityRecommended(ctx context.Context) ([]*models.Game, error)
 	FeaturedAndRecommendedGames(ctx context.Context) ([]*models.Game, error)
 	Games(ctx context.Context, page int64) (*models.GamePagination, error)
@@ -592,12 +629,108 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Community.Reviews(childComplexity), true
 
+	case "CommunityDiscussion.body":
+		if e.complexity.CommunityDiscussion.Body == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.Body(childComplexity), true
+
+	case "CommunityDiscussion.comments":
+		if e.complexity.CommunityDiscussion.Comments == nil {
+			break
+		}
+
+		args, err := ec.field_CommunityDiscussion_comments_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.CommunityDiscussion.Comments(childComplexity, args["page"].(int64)), true
+
+	case "CommunityDiscussion.createdAt":
+		if e.complexity.CommunityDiscussion.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.CreatedAt(childComplexity), true
+
+	case "CommunityDiscussion.game":
+		if e.complexity.CommunityDiscussion.Game_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.Game_(childComplexity), true
+
 	case "CommunityDiscussion.id":
 		if e.complexity.CommunityDiscussion.ID == nil {
 			break
 		}
 
 		return e.complexity.CommunityDiscussion.ID(childComplexity), true
+
+	case "CommunityDiscussion.title":
+		if e.complexity.CommunityDiscussion.Title == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.Title(childComplexity), true
+
+	case "CommunityDiscussion.user":
+		if e.complexity.CommunityDiscussion.User_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussion.User_(childComplexity), true
+
+	case "CommunityDiscussionComment.body":
+		if e.complexity.CommunityDiscussionComment.Body == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionComment.Body(childComplexity), true
+
+	case "CommunityDiscussionComment.communityDiscussion":
+		if e.complexity.CommunityDiscussionComment.CommunityDiscussion_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionComment.CommunityDiscussion_(childComplexity), true
+
+	case "CommunityDiscussionComment.createdAt":
+		if e.complexity.CommunityDiscussionComment.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionComment.CreatedAt(childComplexity), true
+
+	case "CommunityDiscussionComment.id":
+		if e.complexity.CommunityDiscussionComment.ID == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionComment.ID(childComplexity), true
+
+	case "CommunityDiscussionComment.user":
+		if e.complexity.CommunityDiscussionComment.User_ == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionComment.User_(childComplexity), true
+
+	case "CommunityDiscussionCommentPagination.data":
+		if e.complexity.CommunityDiscussionCommentPagination.Data == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionCommentPagination.Data(childComplexity), true
+
+	case "CommunityDiscussionCommentPagination.totalPages":
+		if e.complexity.CommunityDiscussionCommentPagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.CommunityDiscussionCommentPagination.TotalPages(childComplexity), true
 
 	case "CommunityImageAndVideo.comments":
 		if e.complexity.CommunityImageAndVideo.Comments == nil {
@@ -814,6 +947,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Game.Discount(childComplexity), true
 
+	case "Game.discussions":
+		if e.complexity.Game.Discussions == nil {
+			break
+		}
+
+		return e.complexity.Game.Discussions(childComplexity), true
+
 	case "Game.genre":
 		if e.complexity.Game.Genre == nil {
 			break
@@ -904,6 +1044,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.Title(childComplexity), true
+
+	case "Game.topDiscussions":
+		if e.complexity.Game.TopDiscussions == nil {
+			break
+		}
+
+		return e.complexity.Game.TopDiscussions(childComplexity), true
 
 	case "GameGenre.id":
 		if e.complexity.GameGenre.ID == nil {
@@ -1401,6 +1548,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.NewIceCandidate(childComplexity, args["accountName"].(string), args["candidate"].(string)), true
 
+	case "Mutation.postCommunityDiscussion":
+		if e.complexity.Mutation.PostCommunityDiscussion == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_postCommunityDiscussion_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PostCommunityDiscussion(childComplexity, args["input"].(models.PostCommunityDiscussion)), true
+
+	case "Mutation.postCommunityDiscussionComment":
+		if e.complexity.Mutation.PostCommunityDiscussionComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_postCommunityDiscussionComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PostCommunityDiscussionComment(childComplexity, args["input"].(models.PostCommunityDiscussionComment)), true
+
 	case "Mutation.postCommunityImagesAndVideosComment":
 		if e.complexity.Mutation.PostCommunityImagesAndVideosComment == nil {
 			break
@@ -1750,6 +1921,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.AllCountries(childComplexity), true
 
+	case "Query.allGames":
+		if e.complexity.Query.AllGames == nil {
+			break
+		}
+
+		return e.complexity.Query.AllGames(childComplexity), true
+
 	case "Query.auth":
 		if e.complexity.Query.Auth == nil {
 			break
@@ -1784,6 +1962,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.FeaturedAndRecommendedGames(childComplexity), true
+
+	case "Query.gameDiscussion":
+		if e.complexity.Query.GameDiscussion == nil {
+			break
+		}
+
+		args, err := ec.field_Query_gameDiscussion_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GameDiscussion(childComplexity, args["id"].(int64)), true
+
+	case "Query.gameDiscussions":
+		if e.complexity.Query.GameDiscussions == nil {
+			break
+		}
+
+		args, err := ec.field_Query_gameDiscussions_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GameDiscussions(childComplexity, args["title"].(string)), true
 
 	case "Query.games":
 		if e.complexity.Query.Games == nil {
@@ -2420,6 +2622,51 @@ extend type Query {
 }`, BuiltIn: false},
 	{Name: "graph/schemas/community_discussions.graphqls", Input: `type CommunityDiscussion {
     id: ID!
+    body: String!
+    comments(page: Int!): CommunityDiscussionCommentPagination!
+    createdAt: Time!
+    game: Game!
+    title: String!
+    user: User!
+}
+
+type CommunityDiscussionCommentPagination {
+    data: [CommunityDiscussionComment!]!
+    totalPages: Int!
+}
+
+type CommunityDiscussionComment {
+    id: ID!
+    body: String!
+    communityDiscussion: CommunityDiscussion!
+    createdAt: Time!
+    user: User!
+}
+
+extend type Game {
+    topDiscussions: [CommunityDiscussion!]!
+    discussions: [CommunityDiscussion!]!
+}
+
+extend type Query {
+    gameDiscussion(id: ID!): CommunityDiscussion
+    gameDiscussions(title: String!): [Game!]!
+}
+
+extend type Mutation {
+    postCommunityDiscussion(input: PostCommunityDiscussion!): CommunityDiscussion!
+    postCommunityDiscussionComment(input: PostCommunityDiscussionComment!): CommunityDiscussionComment!
+}
+
+input PostCommunityDiscussion {
+    gameId: ID!
+    body: String!
+    title: String!
+}
+
+input PostCommunityDiscussionComment {
+    communityDiscussionId: ID!
+    body: String!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/community_images_and_videos.graphqls", Input: `type CommunityImageAndVideoComment {
@@ -2565,6 +2812,7 @@ extend type User {
 }
 
 extend type Query {
+    allGames: [Game!]!
     communityRecommended: [Game!]!
     featuredAndRecommendedGames: [Game!]!
     games(page: Int!): GamePagination!
@@ -2837,6 +3085,21 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_CommunityDiscussion_comments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_CommunityImageAndVideo_comments_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -3345,6 +3608,36 @@ func (ec *executionContext) field_Mutation_newIceCandidate_args(ctx context.Cont
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_postCommunityDiscussionComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.PostCommunityDiscussionComment
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNPostCommunityDiscussionComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPostCommunityDiscussionComment(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_postCommunityDiscussion_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 models.PostCommunityDiscussion
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNPostCommunityDiscussion2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPostCommunityDiscussion(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_postCommunityImagesAndVideosComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3690,6 +3983,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_gameDiscussion_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_gameDiscussions_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["title"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["title"] = arg0
 	return args, nil
 }
 
@@ -4311,6 +4634,468 @@ func (ec *executionContext) _CommunityDiscussion_id(ctx context.Context, field g
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_body(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Body, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_comments(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_CommunityDiscussion_comments_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.CommunityDiscussion().Comments(rctx, obj, args["page"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityDiscussionCommentPagination)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussionCommentPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionCommentPagination(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_game(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Game_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Game)
+	fc.Result = res
+	return ec.marshalNGame2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_title(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussion_user(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussion) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussion",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionComment_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionComment_body(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Body, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionComment_communityDiscussion(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CommunityDiscussion_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionComment_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionComment_user(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionComment) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionComment",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.User)
+	fc.Result = res
+	return ec.marshalNUser2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionCommentPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionCommentPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionCommentPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityDiscussionComment)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussionComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionCommentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CommunityDiscussionCommentPagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.CommunityDiscussionCommentPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CommunityDiscussionCommentPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CommunityImageAndVideo_id(ctx context.Context, field graphql.CollectedField, obj *models.CommunityImageAndVideo) (ret graphql.Marshaler) {
@@ -5755,6 +6540,76 @@ func (ec *executionContext) _Game_title(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Game_topDiscussions(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().TopDiscussions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Game_discussions(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().Discussions(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Game_mostHelpfulReviews(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7055,6 +7910,90 @@ func (ec *executionContext) _Mutation_giftWithCard(ctx context.Context, field gr
 	res := resTmp.(float64)
 	fc.Result = res
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_postCommunityDiscussion(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_postCommunityDiscussion_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PostCommunityDiscussion(rctx, args["input"].(models.PostCommunityDiscussion))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_postCommunityDiscussionComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_postCommunityDiscussionComment_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PostCommunityDiscussionComment(rctx, args["input"].(models.PostCommunityDiscussionComment))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityDiscussionComment)
+	fc.Result = res
+	return ec.marshalNCommunityDiscussionComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionComment(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createCommunityImagesAndVideos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9343,6 +10282,87 @@ func (ec *executionContext) _Query_community(ctx context.Context, field graphql.
 	return ec.marshalNCommunity2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunity(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_gameDiscussion(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_gameDiscussion_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GameDiscussion(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.CommunityDiscussion)
+	fc.Result = res
+	return ec.marshalOCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_gameDiscussions(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_gameDiscussions_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GameDiscussions(rctx, args["title"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_allCountries(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9453,6 +10473,41 @@ func (ec *executionContext) _Query_userByFriendCode(ctx context.Context, field g
 	res := resTmp.(*models.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_allGames(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AllGames(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_communityRecommended(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -13101,6 +14156,70 @@ func (ec *executionContext) unmarshalInputGift(ctx context.Context, obj interfac
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputPostCommunityDiscussion(ctx context.Context, obj interface{}) (models.PostCommunityDiscussion, error) {
+	var it models.PostCommunityDiscussion
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "gameId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameId"))
+			it.GameID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "body":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("body"))
+			it.Body, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "title":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			it.Title, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPostCommunityDiscussionComment(ctx context.Context, obj interface{}) (models.PostCommunityDiscussionComment, error) {
+	var it models.PostCommunityDiscussionComment
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "communityDiscussionId":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("communityDiscussionId"))
+			it.CommunityDiscussionID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "body":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("body"))
+			it.Body, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateGame(ctx context.Context, obj interface{}) (models.UpdateGame, error) {
 	var it models.UpdateGame
 	var asMap = obj.(map[string]interface{})
@@ -13420,6 +14539,124 @@ func (ec *executionContext) _CommunityDiscussion(ctx context.Context, sel ast.Se
 			out.Values[i] = graphql.MarshalString("CommunityDiscussion")
 		case "id":
 			out.Values[i] = ec._CommunityDiscussion_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "body":
+			out.Values[i] = ec._CommunityDiscussion_body(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "comments":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._CommunityDiscussion_comments(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "createdAt":
+			out.Values[i] = ec._CommunityDiscussion_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "game":
+			out.Values[i] = ec._CommunityDiscussion_game(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "title":
+			out.Values[i] = ec._CommunityDiscussion_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "user":
+			out.Values[i] = ec._CommunityDiscussion_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityDiscussionCommentImplementors = []string{"CommunityDiscussionComment"}
+
+func (ec *executionContext) _CommunityDiscussionComment(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityDiscussionComment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityDiscussionCommentImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityDiscussionComment")
+		case "id":
+			out.Values[i] = ec._CommunityDiscussionComment_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "body":
+			out.Values[i] = ec._CommunityDiscussionComment_body(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "communityDiscussion":
+			out.Values[i] = ec._CommunityDiscussionComment_communityDiscussion(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._CommunityDiscussionComment_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._CommunityDiscussionComment_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var communityDiscussionCommentPaginationImplementors = []string{"CommunityDiscussionCommentPagination"}
+
+func (ec *executionContext) _CommunityDiscussionCommentPagination(ctx context.Context, sel ast.SelectionSet, obj *models.CommunityDiscussionCommentPagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, communityDiscussionCommentPaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CommunityDiscussionCommentPagination")
+		case "data":
+			out.Values[i] = ec._CommunityDiscussionCommentPagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._CommunityDiscussionCommentPagination_totalPages(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -13899,6 +15136,34 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "topDiscussions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_topDiscussions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "discussions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_discussions(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "mostHelpfulReviews":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -14346,6 +15611,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "giftWithCard":
 			out.Values[i] = ec._Mutation_giftWithCard(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "postCommunityDiscussion":
+			out.Values[i] = ec._Mutation_postCommunityDiscussion(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "postCommunityDiscussionComment":
+			out.Values[i] = ec._Mutation_postCommunityDiscussionComment(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -14799,6 +16074,31 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "gameDiscussion":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_gameDiscussion(ctx, field)
+				return res
+			})
+		case "gameDiscussions":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_gameDiscussions(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "allCountries":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -14836,6 +16136,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_userByFriendCode(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "allGames":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_allGames(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -15928,6 +17242,71 @@ func (ec *executionContext) marshalNCommunityDiscussion2ᚖgithubᚗcomᚋbrando
 	return ec._CommunityDiscussion(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCommunityDiscussionComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionComment(ctx context.Context, sel ast.SelectionSet, v models.CommunityDiscussionComment) graphql.Marshaler {
+	return ec._CommunityDiscussionComment(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityDiscussionComment2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CommunityDiscussionComment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCommunityDiscussionComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCommunityDiscussionComment2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionComment(ctx context.Context, sel ast.SelectionSet, v *models.CommunityDiscussionComment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityDiscussionComment(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCommunityDiscussionCommentPagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionCommentPagination(ctx context.Context, sel ast.SelectionSet, v models.CommunityDiscussionCommentPagination) graphql.Marshaler {
+	return ec._CommunityDiscussionCommentPagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCommunityDiscussionCommentPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussionCommentPagination(ctx context.Context, sel ast.SelectionSet, v *models.CommunityDiscussionCommentPagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CommunityDiscussionCommentPagination(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNCommunityImageAndVideo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityImageAndVideo(ctx context.Context, sel ast.SelectionSet, v models.CommunityImageAndVideo) graphql.Marshaler {
 	return ec._CommunityImageAndVideo(ctx, sel, &v)
 }
@@ -16579,6 +17958,16 @@ func (ec *executionContext) marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjul
 		return graphql.Null
 	}
 	return ec._Notification(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNPostCommunityDiscussion2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPostCommunityDiscussion(ctx context.Context, v interface{}) (models.PostCommunityDiscussion, error) {
+	res, err := ec.unmarshalInputPostCommunityDiscussion(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPostCommunityDiscussionComment2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPostCommunityDiscussionComment(ctx context.Context, v interface{}) (models.PostCommunityDiscussionComment, error) {
+	res, err := ec.unmarshalInputPostCommunityDiscussionComment(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNPrivateMessage2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPrivateMessage(ctx context.Context, sel ast.SelectionSet, v models.PrivateMessage) graphql.Marshaler {
@@ -17246,6 +18635,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) marshalOCommunityDiscussion2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCommunityDiscussion(ctx context.Context, sel ast.SelectionSet, v *models.CommunityDiscussion) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CommunityDiscussion(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

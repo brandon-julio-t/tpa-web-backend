@@ -68,6 +68,11 @@ func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Ga
 	return new(repositories.GameRepository).Delete(id)
 }
 
+func (r *queryResolver) AllGames(ctx context.Context) ([]*models.Game, error) {
+	games := make([]*models.Game, 0)
+	return games, facades.UseDB().Find(&games).Error
+}
+
 func (r *queryResolver) CommunityRecommended(ctx context.Context) ([]*models.Game, error) {
 	games := make([]*models.Game, 0)
 	return games, new(repositories.GameRepository).

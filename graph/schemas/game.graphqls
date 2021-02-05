@@ -37,6 +37,7 @@ extend type User {
 }
 
 extend type Query {
+    allGames: [Game!]!
     communityRecommended: [Game!]!
     featuredAndRecommendedGames: [Game!]!
     games(page: Int!): GamePagination!

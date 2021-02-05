@@ -45,9 +45,9 @@ func (r *mutationResolver) PostGameReviewComment(ctx context.Context, input mode
 	}
 
 	comment := &models.GameReviewComment{
-		Body:  input.Body,
+		Body:        input.Body,
 		GameReview_: *review,
-		User_: *user,
+		User_:       *user,
 	}
 	return comment, facades.UseDB().Create(comment).Error
 }
