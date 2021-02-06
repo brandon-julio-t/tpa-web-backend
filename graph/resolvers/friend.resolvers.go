@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/brandon-julio-t/tpa-web-backend/commands"
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/generated"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -56,17 +57,11 @@ func (r *mutationResolver) AcceptFriendRequest(ctx context.Context, userID int64
 	}
 
 	return friend, facades.UseDB().Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&models.Friendship{
-			User:   *user,
-			Friend: *friend,
-		}).Error; err != nil {
-			return err
-		}
-
-		return tx.Where("user_id = ?", friend.ID).
-			Where("friend_id = ?", user.ID).
-			Delete(new(models.FriendRequest)).
-			Error
+		return commands.BefriendCommand{
+			DB:     tx,
+			User:   user,
+			Friend: friend,
+		}.Execute()
 	})
 }
 
@@ -81,11 +76,35 @@ func (r *mutationResolver) RejectFriendRequest(ctx context.Context, userID int64
 		return nil, err
 	}
 
-	return friend, facades.UseDB().
+	request := new(models.FriendRequest)
+	if err := facades.UseDB().First(request, "user_id = ? and friend_id = ?", friend.ID, user.ID).Error; err != nil {
+		return nil, err
+	}
+
+	return friend, facades.UseDB().Unscoped().Delete(request).Error
+}
+
+func (r *mutationResolver) IgnoreFriendRequest(ctx context.Context, userID int64) (*models.User, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	friend := new(models.User)
+	if err := facades.UseDB().First(friend, userID).Error; err != nil {
+		return nil, err
+	}
+
+	request := new(models.FriendRequest)
+	if err := facades.UseDB().
 		Where("user_id = ?", friend.ID).
 		Where("friend_id = ?", user.ID).
-		Delete(new(models.FriendRequest)).
-		Error
+		First(request).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return friend, facades.UseDB().Delete(request).Error
 }
 
 func (r *queryResolver) UserByFriendCode(ctx context.Context, code string) (*models.User, error) {
@@ -121,7 +140,12 @@ func (r *userResolver) Friends(ctx context.Context, obj *models.User) ([]*models
 
 func (r *userResolver) OutgoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error) {
 	requests := make([]*models.FriendRequest, 0)
-	if err := facades.UseDB().Preload("FriendRequestUser").Where("user_id = ?", obj.ID).Find(&requests).Error; err != nil {
+	if err := facades.UseDB().
+		Preload("FriendRequestUser").
+		Where("user_id = ?", obj.ID).
+		Unscoped().
+		Find(&requests).
+		Error; err != nil {
 		return nil, err
 	}
 
@@ -135,7 +159,11 @@ func (r *userResolver) OutgoingFriendRequests(ctx context.Context, obj *models.U
 
 func (r *userResolver) IngoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error) {
 	requests := make([]*models.FriendRequest, 0)
-	if err := facades.UseDB().Preload("FriendRequestUser").Where("friend_id = ?", obj.ID).Find(&requests).Error; err != nil {
+	if err := facades.UseDB().
+		Preload("FriendRequestUser").
+		Where("friend_id = ?", obj.ID).
+		Find(&requests).
+		Error; err != nil {
 		return nil, err
 	}
 

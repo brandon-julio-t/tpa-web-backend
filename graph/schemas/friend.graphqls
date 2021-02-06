@@ -20,4 +20,5 @@ extend type Mutation {
     sendFriendRequest(userId: ID!): User!
     acceptFriendRequest(userId: ID!): User!
     rejectFriendRequest(userId: ID!): User!
+    ignoreFriendRequest(userId: ID!): User!
 }

@@ -229,6 +229,7 @@ type ComplexityRoot struct {
 		DownVoteReview                        func(childComplexity int, id int64) int
 		GiftWithCard                          func(childComplexity int, input models.Gift) int
 		GiftWithWallet                        func(childComplexity int, input models.Gift) int
+		IgnoreFriendRequest                   func(childComplexity int, userID int64) int
 		JoinStream                            func(childComplexity int, accountName string, rtcAnswer string) int
 		LikeCreateCommunityImagesAndVideos    func(childComplexity int, imageAndVideoID int64) int
 		Login                                 func(childComplexity int, accountName string, password string) int
@@ -452,6 +453,7 @@ type MutationResolver interface {
 	SendFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	AcceptFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	RejectFriendRequest(ctx context.Context, userID int64) (*models.User, error)
+	IgnoreFriendRequest(ctx context.Context, userID int64) (*models.User, error)
 	CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error)
 	UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error)
 	DeleteGame(ctx context.Context, id int64) (*models.Game, error)
@@ -1492,6 +1494,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.GiftWithWallet(childComplexity, args["input"].(models.Gift)), true
+
+	case "Mutation.ignoreFriendRequest":
+		if e.complexity.Mutation.IgnoreFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_ignoreFriendRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.IgnoreFriendRequest(childComplexity, args["userId"].(int64)), true
 
 	case "Mutation.joinStream":
 		if e.complexity.Mutation.JoinStream == nil {
@@ -2771,6 +2785,7 @@ extend type Mutation {
     sendFriendRequest(userId: ID!): User!
     acceptFriendRequest(userId: ID!): User!
     rejectFriendRequest(userId: ID!): User!
+    ignoreFriendRequest(userId: ID!): User!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/game.graphqls", Input: `type Game {
@@ -3518,6 +3533,21 @@ func (ec *executionContext) field_Mutation_giftWithWallet_args(ctx context.Conte
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_ignoreFriendRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["userId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userId"] = arg0
 	return args, nil
 }
 
@@ -8316,6 +8346,48 @@ func (ec *executionContext) _Mutation_rejectFriendRequest(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().RejectFriendRequest(rctx, args["userId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_ignoreFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_ignoreFriendRequest_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().IgnoreFriendRequest(rctx, args["userId"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -15661,6 +15733,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "rejectFriendRequest":
 			out.Values[i] = ec._Mutation_rejectFriendRequest(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "ignoreFriendRequest":
+			out.Values[i] = ec._Mutation_ignoreFriendRequest(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

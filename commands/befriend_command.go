@@ -6,8 +6,8 @@ import (
 )
 
 type BefriendCommand struct {
-	DB *gorm.DB
-	User *models.User
+	DB     *gorm.DB
+	User   *models.User
 	Friend *models.User
 }
 
@@ -23,6 +23,15 @@ func (c BefriendCommand) Execute() error {
 		User:   *c.Friend,
 		Friend: *c.User,
 	}).Error; err != nil {
+		return err
+	}
+
+	if err := c.DB.
+		Where("user_id = ? and friend_id = ?", c.User.ID, c.Friend.ID).
+		Or("user_id = ? and friend_id = ?", c.Friend.ID, c.User.ID).
+		Unscoped().
+		Delete(new(models.FriendRequest)).
+		Error; err != nil {
 		return err
 	}
 
