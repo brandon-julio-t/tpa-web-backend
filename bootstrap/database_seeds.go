@@ -31,6 +31,8 @@ func init() {
 				database_seeds.SeedCommunityImageAndVideoDislikesLikes,
 				database_seeds.SeedCommunityDiscussions,
 				database_seeds.SeedCommunityDiscussionComments,
+
+				database_seeds.SeedPointItems,
 			} {
 				if err := seed(); err != nil {
 					return err

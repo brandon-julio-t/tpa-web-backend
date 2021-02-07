@@ -52,6 +52,8 @@ func init() {
 		new(models.CommunityImageAndVideoRating),
 		new(models.CommunityDiscussion),
 		new(models.CommunityDiscussionComment),
+
+		new(models.PointItem),
 	}
 
 	if err := facades.UseDB().Migrator().DropTable(entities...); err != nil {

@@ -1,0 +1,19 @@
+type PointItem {
+    id: ID!
+    name: String!
+    category: String!
+    price: Int!
+    image: AssetFile!
+}
+
+extend type Query {
+    pointItemProfileBackgrounds: [PointItem!]!
+    pointItemAvatarBorders: [PointItem!]!
+    pointItemAnimatedAvatars: [PointItem!]!
+    pointItemChatStickers: [PointItem!]!
+    pointItemMiniProfileBackgrounds: [PointItem!]!
+}
+
+extend type Mutation {
+    purchasePointItem(id: ID!): PointItem!
+}

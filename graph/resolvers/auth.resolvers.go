@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (r *mutationResolver) Login(ctx context.Context, accountName string, password string) (*models.User, error) {
+func (r *mutationResolver) Login(ctx context.Context, accountName string, password string, rememberMe bool) (*models.User, error) {
 	user, err := new(repositories.UserRepository).GetByAccountName(accountName)
 	if err != nil {
 		return nil, err
@@ -33,38 +33,65 @@ func (r *mutationResolver) Login(ctx context.Context, accountName string, passwo
 		return nil, err
 	}
 
-	jwtExpireDuration, err := time.ParseDuration("15m")
-	if err != nil {
-		return nil, err
-	}
+	if !rememberMe {
+		jwtExpireDuration, err := time.ParseDuration("15m")
+		if err != nil {
+			return nil, err
+		}
 
-	jwtToken, err := jwt.NewWithClaims(jwt.SigningMethodHS512, models.UserJwtClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(jwtExpireDuration).Unix(),
-		},
-		UserID: user.ID,
-	}).SignedString(facades.UseSecret())
+		jwtToken, err := jwt.NewWithClaims(jwt.SigningMethodHS512, models.UserJwtClaims{
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: time.Now().Add(jwtExpireDuration).Unix(),
+			},
+			UserID: user.ID,
+		}).SignedString(facades.UseSecret())
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}
 
-	if os.Getenv("ENV") == "production" {
-		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
-			Name:     "jwt",
-			Value:    jwtToken,
-			Expires:  time.Now().Add(jwtExpireDuration),
-			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
-			Secure:   true,
-		}).String())
+		if os.Getenv("ENV") == "production" {
+			middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+				Name:     "jwt",
+				Value:    jwtToken,
+				Expires:  time.Now().Add(jwtExpireDuration),
+				HttpOnly: true,
+				SameSite: http.SameSiteNoneMode,
+				Secure:   true,
+			}).String())
+		} else {
+			middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+				Name:     "jwt",
+				Value:    jwtToken,
+				Expires:  time.Now().Add(jwtExpireDuration),
+				HttpOnly: true,
+			}).String())
+		}
 	} else {
-		middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
-			Name:     "jwt",
-			Value:    jwtToken,
-			Expires:  time.Now().Add(jwtExpireDuration),
-			HttpOnly: true,
-		}).String())
+		jwtToken, err := jwt.NewWithClaims(jwt.SigningMethodHS512, models.UserJwtClaims{
+			StandardClaims: jwt.StandardClaims{},
+			UserID:         user.ID,
+		}).SignedString(facades.UseSecret())
+
+		if err != nil {
+			return nil, err
+		}
+
+		if os.Getenv("ENV") == "production" {
+			middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+				Name:     "jwt",
+				Value:    jwtToken,
+				HttpOnly: true,
+				SameSite: http.SameSiteNoneMode,
+				Secure:   true,
+			}).String())
+		} else {
+			middlewares.UseGin(ctx).Writer.Header().Add("Set-Cookie", (&http.Cookie{
+				Name:     "jwt",
+				Value:    jwtToken,
+				HttpOnly: true,
+			}).String())
+		}
 	}
 
 	user.Status = "online"

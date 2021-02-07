@@ -232,13 +232,14 @@ type ComplexityRoot struct {
 		IgnoreFriendRequest                   func(childComplexity int, userID int64) int
 		JoinStream                            func(childComplexity int, accountName string, rtcAnswer string) int
 		LikeCreateCommunityImagesAndVideos    func(childComplexity int, imageAndVideoID int64) int
-		Login                                 func(childComplexity int, accountName string, password string) int
+		Login                                 func(childComplexity int, accountName string, password string, rememberMe bool) int
 		Logout                                func(childComplexity int) int
 		NewIceCandidate                       func(childComplexity int, accountName string, candidate string) int
 		PostCommunityDiscussion               func(childComplexity int, input models.PostCommunityDiscussion) int
 		PostCommunityDiscussionComment        func(childComplexity int, input models.PostCommunityDiscussionComment) int
 		PostCommunityImagesAndVideosComment   func(childComplexity int, imageAndVideoID int64, body string) int
 		PostGameReviewComment                 func(childComplexity int, input models.GameReviewCommentInput) int
+		PurchasePointItem                     func(childComplexity int, id int64) int
 		RedeemWallet                          func(childComplexity int, code string) int
 		Register                              func(childComplexity int, accountName string, email string, password string, countryID int64) int
 		RejectFriendRequest                   func(childComplexity int, userID int64) int
@@ -262,6 +263,14 @@ type ComplexityRoot struct {
 		Content   func(childComplexity int) int
 		CreatedAt func(childComplexity int) int
 		ID        func(childComplexity int) int
+	}
+
+	PointItem struct {
+		Category func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Image_   func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Price    func(childComplexity int) int
 	}
 
 	PrivateMessage struct {
@@ -291,38 +300,43 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AllCountries                func(childComplexity int) int
-		AllGames                    func(childComplexity int) int
-		Auth                        func(childComplexity int) int
-		Community                   func(childComplexity int) int
-		CommunityRecommended        func(childComplexity int) int
-		DiscoverQueue               func(childComplexity int) int
-		FeaturedAndRecommendedGames func(childComplexity int) int
-		GameDiscussion              func(childComplexity int, id int64) int
-		GameDiscussions             func(childComplexity int, title string) int
-		Games                       func(childComplexity int, page int64) int
-		Genres                      func(childComplexity int) int
-		GetAllGameTags              func(childComplexity int) int
-		GetAllUnsuspendRequests     func(childComplexity int) int
-		GetGameByID                 func(childComplexity int, id int64) int
-		GetProfile                  func(childComplexity int, customURL string) int
-		GetReportsByUser            func(childComplexity int, id int64) int
-		NewAndTrending              func(childComplexity int) int
-		NotificationByID            func(childComplexity int, id int64) int
-		PrivateMessage              func(childComplexity int, friendID int64) int
-		ProfileComments             func(childComplexity int, profileID int64) int
-		Promo                       func(childComplexity int, id int64) int
-		Promos                      func(childComplexity int, page int64) int
-		RefreshToken                func(childComplexity int) int
-		SearchGames                 func(childComplexity int, page int64, keyword string, price int64, genres []int64, category string) int
-		SidebarGameTags             func(childComplexity int) int
-		SpecialOffersGame           func(childComplexity int) int
-		Specials                    func(childComplexity int) int
-		Streams                     func(childComplexity int) int
-		TopSellers                  func(childComplexity int) int
-		User                        func(childComplexity int, accountName string) int
-		UserByFriendCode            func(childComplexity int, code string) int
-		Users                       func(childComplexity int, page int64) int
+		AllCountries                    func(childComplexity int) int
+		AllGames                        func(childComplexity int) int
+		Auth                            func(childComplexity int) int
+		Community                       func(childComplexity int) int
+		CommunityRecommended            func(childComplexity int) int
+		DiscoverQueue                   func(childComplexity int) int
+		FeaturedAndRecommendedGames     func(childComplexity int) int
+		GameDiscussion                  func(childComplexity int, id int64) int
+		GameDiscussions                 func(childComplexity int, title string) int
+		Games                           func(childComplexity int, page int64) int
+		Genres                          func(childComplexity int) int
+		GetAllGameTags                  func(childComplexity int) int
+		GetAllUnsuspendRequests         func(childComplexity int) int
+		GetGameByID                     func(childComplexity int, id int64) int
+		GetProfile                      func(childComplexity int, customURL string) int
+		GetReportsByUser                func(childComplexity int, id int64) int
+		NewAndTrending                  func(childComplexity int) int
+		NotificationByID                func(childComplexity int, id int64) int
+		PointItemAnimatedAvatars        func(childComplexity int) int
+		PointItemAvatarBorders          func(childComplexity int) int
+		PointItemChatStickers           func(childComplexity int) int
+		PointItemMiniProfileBackgrounds func(childComplexity int) int
+		PointItemProfileBackgrounds     func(childComplexity int) int
+		PrivateMessage                  func(childComplexity int, friendID int64) int
+		ProfileComments                 func(childComplexity int, profileID int64) int
+		Promo                           func(childComplexity int, id int64) int
+		Promos                          func(childComplexity int, page int64) int
+		RefreshToken                    func(childComplexity int) int
+		SearchGames                     func(childComplexity int, page int64, keyword string, price int64, genres []int64, category string) int
+		SidebarGameTags                 func(childComplexity int) int
+		SpecialOffersGame               func(childComplexity int) int
+		Specials                        func(childComplexity int) int
+		Streams                         func(childComplexity int) int
+		TopSellers                      func(childComplexity int) int
+		User                            func(childComplexity int, accountName string) int
+		UserByFriendCode                func(childComplexity int, code string) int
+		Users                           func(childComplexity int, page int64) int
 	}
 
 	Report struct {
@@ -356,6 +370,7 @@ type ComplexityRoot struct {
 		MostViewedGenres             func(childComplexity int) int
 		Notifications                func(childComplexity int) int
 		OutgoingFriendRequests       func(childComplexity int) int
+		Points                       func(childComplexity int) int
 		ProfilePicture               func(childComplexity int) int
 		ProfileTheme                 func(childComplexity int) int
 		RealName                     func(childComplexity int) int
@@ -436,7 +451,7 @@ type GameSlideshowResolver interface {
 	File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error)
 }
 type MutationResolver interface {
-	Login(ctx context.Context, accountName string, password string) (*models.User, error)
+	Login(ctx context.Context, accountName string, password string, rememberMe bool) (*models.User, error)
 	Logout(ctx context.Context) (*models.User, error)
 	AddToCart(ctx context.Context, gameID int64) (*models.Game, error)
 	RemoveFromCart(ctx context.Context, gameID int64) (*models.Game, error)
@@ -466,6 +481,7 @@ type MutationResolver interface {
 	DeleteNotification(ctx context.Context, id int64) (*models.Notification, error)
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
+	PurchasePointItem(ctx context.Context, id int64) (*models.PointItem, error)
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
 	CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error)
 	DeleteProfileComment(ctx context.Context, id int64) (*models.ProfileComment, error)
@@ -510,6 +526,11 @@ type QueryResolver interface {
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
 	SidebarGameTags(ctx context.Context) ([]*models.GameTag, error)
 	NotificationByID(ctx context.Context, id int64) (*models.Notification, error)
+	PointItemProfileBackgrounds(ctx context.Context) ([]*models.PointItem, error)
+	PointItemAvatarBorders(ctx context.Context) ([]*models.PointItem, error)
+	PointItemAnimatedAvatars(ctx context.Context) ([]*models.PointItem, error)
+	PointItemChatStickers(ctx context.Context) ([]*models.PointItem, error)
+	PointItemMiniProfileBackgrounds(ctx context.Context) ([]*models.PointItem, error)
 	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
 	Promos(ctx context.Context, page int64) (*models.PromoPagination, error)
@@ -532,6 +553,7 @@ type UserResolver interface {
 
 	Level(ctx context.Context, obj *models.User) (int64, error)
 	MostViewedGenres(ctx context.Context, obj *models.User) ([]*models.GameTag, error)
+
 	ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error)
 
 	Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error)
@@ -1545,7 +1567,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.Login(childComplexity, args["accountName"].(string), args["password"].(string)), true
+		return e.complexity.Mutation.Login(childComplexity, args["accountName"].(string), args["password"].(string), args["rememberMe"].(bool)), true
 
 	case "Mutation.logout":
 		if e.complexity.Mutation.Logout == nil {
@@ -1613,6 +1635,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.PostGameReviewComment(childComplexity, args["input"].(models.GameReviewCommentInput)), true
+
+	case "Mutation.purchasePointItem":
+		if e.complexity.Mutation.PurchasePointItem == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_purchasePointItem_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PurchasePointItem(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.redeemWallet":
 		if e.complexity.Mutation.RedeemWallet == nil {
@@ -1833,6 +1867,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Notification.ID(childComplexity), true
+
+	case "PointItem.category":
+		if e.complexity.PointItem.Category == nil {
+			break
+		}
+
+		return e.complexity.PointItem.Category(childComplexity), true
+
+	case "PointItem.id":
+		if e.complexity.PointItem.ID == nil {
+			break
+		}
+
+		return e.complexity.PointItem.ID(childComplexity), true
+
+	case "PointItem.image":
+		if e.complexity.PointItem.Image_ == nil {
+			break
+		}
+
+		return e.complexity.PointItem.Image_(childComplexity), true
+
+	case "PointItem.name":
+		if e.complexity.PointItem.Name == nil {
+			break
+		}
+
+		return e.complexity.PointItem.Name(childComplexity), true
+
+	case "PointItem.price":
+		if e.complexity.PointItem.Price == nil {
+			break
+		}
+
+		return e.complexity.PointItem.Price(childComplexity), true
 
 	case "PrivateMessage.createdAt":
 		if e.complexity.PrivateMessage.CreatedAt == nil {
@@ -2092,6 +2161,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.NotificationByID(childComplexity, args["id"].(int64)), true
+
+	case "Query.pointItemAnimatedAvatars":
+		if e.complexity.Query.PointItemAnimatedAvatars == nil {
+			break
+		}
+
+		return e.complexity.Query.PointItemAnimatedAvatars(childComplexity), true
+
+	case "Query.pointItemAvatarBorders":
+		if e.complexity.Query.PointItemAvatarBorders == nil {
+			break
+		}
+
+		return e.complexity.Query.PointItemAvatarBorders(childComplexity), true
+
+	case "Query.pointItemChatStickers":
+		if e.complexity.Query.PointItemChatStickers == nil {
+			break
+		}
+
+		return e.complexity.Query.PointItemChatStickers(childComplexity), true
+
+	case "Query.pointItemMiniProfileBackgrounds":
+		if e.complexity.Query.PointItemMiniProfileBackgrounds == nil {
+			break
+		}
+
+		return e.complexity.Query.PointItemMiniProfileBackgrounds(childComplexity), true
+
+	case "Query.pointItemProfileBackgrounds":
+		if e.complexity.Query.PointItemProfileBackgrounds == nil {
+			break
+		}
+
+		return e.complexity.Query.PointItemProfileBackgrounds(childComplexity), true
 
 	case "Query.privateMessage":
 		if e.complexity.Query.PrivateMessage == nil {
@@ -2404,6 +2508,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.OutgoingFriendRequests(childComplexity), true
 
+	case "User.points":
+		if e.complexity.User.Points == nil {
+			break
+		}
+
+		return e.complexity.User.Points(childComplexity), true
+
 	case "User.profilePicture":
 		if e.complexity.User.ProfilePicture == nil {
 			break
@@ -2615,7 +2726,7 @@ var sources = []*ast.Source{
 }
 
 type Mutation {
-    login(accountName: String!, password: String!): User!
+    login(accountName: String!, password: String!, rememberMe: Boolean!): User!
     logout: User!
 }
 `, BuiltIn: false},
@@ -2950,6 +3061,26 @@ extend type Mutation {
     verifyOTP(otp: String!): Boolean!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/point_item.graphqls", Input: `type PointItem {
+    id: ID!
+    name: String!
+    category: String!
+    price: Int!
+    image: AssetFile!
+}
+
+extend type Query {
+    pointItemProfileBackgrounds: [PointItem!]!
+    pointItemAvatarBorders: [PointItem!]!
+    pointItemAnimatedAvatars: [PointItem!]!
+    pointItemChatStickers: [PointItem!]!
+    pointItemMiniProfileBackgrounds: [PointItem!]!
+}
+
+extend type Mutation {
+    purchasePointItem(id: ID!): PointItem!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/private_message.graphqls", Input: `type PrivateMessage {
     id: ID!
     text: String!
@@ -3070,6 +3201,7 @@ type User {
     email: String!
     level: Int!
     mostViewedGenres: [GameTag!]!
+    points: Int!
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
@@ -3640,6 +3772,15 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 		}
 	}
 	args["password"] = arg1
+	var arg2 bool
+	if tmp, ok := rawArgs["rememberMe"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rememberMe"))
+		arg2, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["rememberMe"] = arg2
 	return args, nil
 }
 
@@ -3733,6 +3874,21 @@ func (ec *executionContext) field_Mutation_postGameReviewComment_args(ctx contex
 		}
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_purchasePointItem_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -7646,7 +7802,7 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().Login(rctx, args["accountName"].(string), args["password"].(string))
+		return ec.resolvers.Mutation().Login(rctx, args["accountName"].(string), args["password"].(string), args["rememberMe"].(bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8853,6 +9009,48 @@ func (ec *executionContext) _Mutation_verifyOTP(ctx context.Context, field graph
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_purchasePointItem(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_purchasePointItem_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PurchasePointItem(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_addPrivateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9789,6 +9987,181 @@ func (ec *executionContext) _Notification_createdAt(ctx context.Context, field g
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PointItem_id(ctx context.Context, field graphql.CollectedField, obj *models.PointItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PointItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PointItem_name(ctx context.Context, field graphql.CollectedField, obj *models.PointItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PointItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PointItem_category(ctx context.Context, field graphql.CollectedField, obj *models.PointItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PointItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Category, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PointItem_price(ctx context.Context, field graphql.CollectedField, obj *models.PointItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PointItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Price, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PointItem_image(ctx context.Context, field graphql.CollectedField, obj *models.PointItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "PointItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Image_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.AssetFile)
+	fc.Result = res
+	return ec.marshalNAssetFile2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PrivateMessage_id(ctx context.Context, field graphql.CollectedField, obj *models.PrivateMessage) (ret graphql.Marshaler) {
@@ -11094,6 +11467,181 @@ func (ec *executionContext) _Query_notificationById(ctx context.Context, field g
 	return ec.marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_pointItemProfileBackgrounds(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PointItemProfileBackgrounds(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pointItemAvatarBorders(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PointItemAvatarBorders(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pointItemAnimatedAvatars(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PointItemAnimatedAvatars(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pointItemChatStickers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PointItemChatStickers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pointItemMiniProfileBackgrounds(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().PointItemMiniProfileBackgrounds(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_privateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12236,6 +12784,41 @@ func (ec *executionContext) _User_mostViewedGenres(ctx context.Context, field gr
 	res := resTmp.([]*models.GameTag)
 	fc.Result = res
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_points(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Points, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_profilePicture(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -15890,6 +16473,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "purchasePointItem":
+			out.Values[i] = ec._Mutation_purchasePointItem(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addPrivateMessage":
 			out.Values[i] = ec._Mutation_addPrivateMessage(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -16024,6 +16612,53 @@ func (ec *executionContext) _Notification(ctx context.Context, sel ast.Selection
 			}
 		case "createdAt":
 			out.Values[i] = ec._Notification_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var pointItemImplementors = []string{"PointItem"}
+
+func (ec *executionContext) _PointItem(ctx context.Context, sel ast.SelectionSet, obj *models.PointItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pointItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PointItem")
+		case "id":
+			out.Values[i] = ec._PointItem_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._PointItem_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "category":
+			out.Values[i] = ec._PointItem_category(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "price":
+			out.Values[i] = ec._PointItem_price(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "image":
+			out.Values[i] = ec._PointItem_image(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -16513,6 +17148,76 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "pointItemProfileBackgrounds":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pointItemProfileBackgrounds(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pointItemAvatarBorders":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pointItemAvatarBorders(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pointItemAnimatedAvatars":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pointItemAnimatedAvatars(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pointItemChatStickers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pointItemChatStickers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pointItemMiniProfileBackgrounds":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pointItemMiniProfileBackgrounds(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "privateMessage":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -16836,6 +17541,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "points":
+			out.Values[i] = ec._User_points(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "profilePicture":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18098,6 +18808,21 @@ func (ec *executionContext) marshalNID2ᚕint64ᚄ(ctx context.Context, sel ast.
 	return ret
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt2int64(ctx context.Context, v interface{}) (int64, error) {
 	res, err := graphql.UnmarshalInt64(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -18162,6 +18887,57 @@ func (ec *executionContext) marshalNNotification2ᚖgithubᚗcomᚋbrandonᚑjul
 		return graphql.Null
 	}
 	return ec._Notification(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPointItem2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx context.Context, sel ast.SelectionSet, v models.PointItem) graphql.Marshaler {
+	return ec._PointItem(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.PointItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx context.Context, sel ast.SelectionSet, v *models.PointItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PointItem(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNPostCommunityDiscussion2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPostCommunityDiscussion(ctx context.Context, v interface{}) (models.PostCommunityDiscussion, error) {

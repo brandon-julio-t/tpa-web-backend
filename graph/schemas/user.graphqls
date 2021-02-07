@@ -12,6 +12,7 @@ type User {
     email: String!
     level: Int!
     mostViewedGenres: [GameTag!]!
+    points: Int!
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!

@@ -5,12 +5,12 @@ package resolvers
 
 import (
 	"context"
-	"gorm.io/gorm"
 	"math"
 	"time"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"gorm.io/gorm"
 )
 
 func (r *mutationResolver) CreatePromo(ctx context.Context, discount float64, endAt time.Time, gameID int64) (*models.Promo, error) {
@@ -22,7 +22,6 @@ func (r *mutationResolver) CreatePromo(ctx context.Context, discount float64, en
 	promo := &models.Promo{
 		Discount: 0,
 		EndAt:    time.Time{},
-		Game_:    *game,
 	}
 
 	return promo, facades.UseDB().Transaction(func(tx *gorm.DB) error {
