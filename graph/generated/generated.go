@@ -217,7 +217,7 @@ type ComplexityRoot struct {
 		CreateCommunityImagesAndVideos        func(childComplexity int, input models.CreateCommunityImageAndVideo) int
 		CreateGame                            func(childComplexity int, input models.CreateGame) int
 		CreateProfileComment                  func(childComplexity int, profileID int64, comment string) int
-		CreatePromo                           func(childComplexity int, discount float64, endAt time.Time) int
+		CreatePromo                           func(childComplexity int, discount float64, endAt time.Time, gameID int64) int
 		CreateReview                          func(childComplexity int, gameID int64, content string, isRecommended bool) int
 		DeleteGame                            func(childComplexity int, id int64) int
 		DeleteNotification                    func(childComplexity int, id int64) int
@@ -315,6 +315,7 @@ type ComplexityRoot struct {
 		Promos                      func(childComplexity int, page int64) int
 		RefreshToken                func(childComplexity int) int
 		SearchGames                 func(childComplexity int, page int64, keyword string, price int64, genres []int64, category string) int
+		SidebarGameTags             func(childComplexity int) int
 		SpecialOffersGame           func(childComplexity int) int
 		Specials                    func(childComplexity int) int
 		Streams                     func(childComplexity int) int
@@ -352,6 +353,7 @@ type ComplexityRoot struct {
 		ID                           func(childComplexity int) int
 		IngoingFriendRequests        func(childComplexity int) int
 		Level                        func(childComplexity int) int
+		MostViewedGenres             func(childComplexity int) int
 		Notifications                func(childComplexity int) int
 		OutgoingFriendRequests       func(childComplexity int) int
 		ProfilePicture               func(childComplexity int) int
@@ -467,7 +469,7 @@ type MutationResolver interface {
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
 	CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error)
 	DeleteProfileComment(ctx context.Context, id int64) (*models.ProfileComment, error)
-	CreatePromo(ctx context.Context, discount float64, endAt time.Time) (*models.Promo, error)
+	CreatePromo(ctx context.Context, discount float64, endAt time.Time, gameID int64) (*models.Promo, error)
 	UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error)
 	DeletePromo(ctx context.Context, id int64) (*models.Promo, error)
 	SubmitReport(ctx context.Context, userID int64, description string) (*models.Report, error)
@@ -506,6 +508,7 @@ type QueryResolver interface {
 	Specials(ctx context.Context) ([]*models.Game, error)
 	TopSellers(ctx context.Context) ([]*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
+	SidebarGameTags(ctx context.Context) ([]*models.GameTag, error)
 	NotificationByID(ctx context.Context, id int64) (*models.Notification, error)
 	PrivateMessage(ctx context.Context, friendID int64) ([]*models.PrivateMessage, error)
 	ProfileComments(ctx context.Context, profileID int64) ([]*models.ProfileComment, error)
@@ -528,6 +531,7 @@ type UserResolver interface {
 	CartCount(ctx context.Context, obj *models.User) (int64, error)
 
 	Level(ctx context.Context, obj *models.User) (int64, error)
+	MostViewedGenres(ctx context.Context, obj *models.User) ([]*models.GameTag, error)
 	ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error)
 
 	Wishlist(ctx context.Context, obj *models.User) ([]*models.Game, error)
@@ -1361,7 +1365,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreatePromo(childComplexity, args["discount"].(float64), args["endAt"].(time.Time)), true
+		return e.complexity.Mutation.CreatePromo(childComplexity, args["discount"].(float64), args["endAt"].(time.Time), args["gameId"].(int64)), true
 
 	case "Mutation.createReview":
 		if e.complexity.Mutation.CreateReview == nil {
@@ -2156,6 +2160,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.SearchGames(childComplexity, args["page"].(int64), args["keyword"].(string), args["price"].(int64), args["genres"].([]int64), args["category"].(string)), true
 
+	case "Query.sidebarGameTags":
+		if e.complexity.Query.SidebarGameTags == nil {
+			break
+		}
+
+		return e.complexity.Query.SidebarGameTags(childComplexity), true
+
 	case "Query.specialOffersGame":
 		if e.complexity.Query.SpecialOffersGame == nil {
 			break
@@ -2371,6 +2382,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Level(childComplexity), true
+
+	case "User.mostViewedGenres":
+		if e.complexity.User.MostViewedGenres == nil {
+			break
+		}
+
+		return e.complexity.User.MostViewedGenres(childComplexity), true
 
 	case "User.notifications":
 		if e.complexity.User.Notifications == nil {
@@ -2903,6 +2921,7 @@ extend type Mutation {
 
 extend type Query {
     getAllGameTags: [GameTag!]!
+    sidebarGameTags: [GameTag!]!
 }`, BuiltIn: false},
 	{Name: "graph/schemas/notification.graphqls", Input: `type Notification {
     id: ID!
@@ -2984,7 +3003,7 @@ extend type Query {
 }
 
 extend type Mutation {
-    createPromo(discount: Float!, endAt: Time!): Promo!
+    createPromo(discount: Float!, endAt: Time!, gameId: ID!): Promo!
     updatePromo(id: ID!, discount: Float!, endAt: Time!): Promo!
     deletePromo(id: ID!): Promo!
 }
@@ -3050,6 +3069,7 @@ type User {
     displayName: String!
     email: String!
     level: Int!
+    mostViewedGenres: [GameTag!]!
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!
@@ -3350,6 +3370,15 @@ func (ec *executionContext) field_Mutation_createPromo_args(ctx context.Context,
 		}
 	}
 	args["endAt"] = arg1
+	var arg2 int64
+	if tmp, ok := rawArgs["gameId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameId"))
+		arg2, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["gameId"] = arg2
 	return args, nil
 }
 
@@ -8975,7 +9004,7 @@ func (ec *executionContext) _Mutation_createPromo(ctx context.Context, field gra
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePromo(rctx, args["discount"].(float64), args["endAt"].(time.Time))
+		return ec.resolvers.Mutation().CreatePromo(rctx, args["discount"].(float64), args["endAt"].(time.Time), args["gameId"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10988,6 +11017,41 @@ func (ec *executionContext) _Query_getAllGameTags(ctx context.Context, field gra
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_sidebarGameTags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SidebarGameTags(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.GameTag)
+	fc.Result = res
+	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_notificationById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12137,6 +12201,41 @@ func (ec *executionContext) _User_level(ctx context.Context, field graphql.Colle
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_mostViewedGenres(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().MostViewedGenres(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.GameTag)
+	fc.Result = res
+	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_profilePicture(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -16386,6 +16485,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "sidebarGameTags":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_sidebarGameTags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "notificationById":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -16704,6 +16817,20 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_level(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "mostViewedGenres":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_mostViewedGenres(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

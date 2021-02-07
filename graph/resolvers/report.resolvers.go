@@ -41,7 +41,6 @@ func (r *mutationResolver) SubmitReport(ctx context.Context, userID int64, descr
 	aWeekAgo := now.AddDate(0, 0, -7)
 
 	if err := facades.UseDB().
-		Debug().
 		Model(new(models.Report)).
 		Where("reported_id = ?", reported.ID).
 		Where("created_at >= ?", aWeekAgo).

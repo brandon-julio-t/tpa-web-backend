@@ -13,13 +13,13 @@ func SeedFriends() error {
 	}
 
 	friends := make([]*models.User, 0)
-	if err := facades.UseDB().Find(&friends, "id not in (?, ?)", 1, 2).Error; err != nil {
+	if err := facades.UseDB().Find(&friends, "id != ?", 2).Error; err != nil {
 		return err
 	}
 
 	for _, friend := range friends {
 		if err := (commands.BefriendCommand{
-			DB:     facades.UseDB(),
+			DB:     facades.UseDB().Debug(), // wtf
 			User:   user,
 			Friend: friend,
 		}.Execute()); err != nil {

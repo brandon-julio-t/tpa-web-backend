@@ -11,6 +11,7 @@ type User {
     displayName: String!
     email: String!
     level: Int!
+    mostViewedGenres: [GameTag!]!
     profilePicture: AssetFile!
     profileTheme: String!
     realName: String!

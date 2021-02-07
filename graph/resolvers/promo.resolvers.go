@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"gorm.io/gorm"
 	"math"
 	"time"
 
@@ -12,13 +13,51 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 )
 
-func (r *mutationResolver) CreatePromo(ctx context.Context, discount float64, endAt time.Time) (*models.Promo, error) {
-	promo := models.Promo{
-		Discount: discount,
-		EndAt:    endAt,
+func (r *mutationResolver) CreatePromo(ctx context.Context, discount float64, endAt time.Time, gameID int64) (*models.Promo, error) {
+	game := new(models.Game)
+	if err := facades.UseDB().First(game, gameID).Error; err != nil {
+		return nil, err
 	}
 
-	return &promo, facades.UseDB().Create(&promo).Error
+	promo := &models.Promo{
+		Discount: 0,
+		EndAt:    time.Time{},
+		Game_:    *game,
+	}
+
+	return promo, facades.UseDB().Transaction(func(tx *gorm.DB) error {
+		game.Discount = discount / 100
+
+		if err := tx.Save(game).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Create(promo).Error; err != nil {
+			return err
+		}
+
+		wishlists := make([]*models.Wishlist, 0)
+		if err := tx.Where("game_id = ?", game.ID).
+			Find(&wishlists).
+			Error; err != nil {
+			return err
+		}
+
+		for _, wishlist := range wishlists {
+			user := wishlist.User_
+			game := wishlist.Game_
+			if err := facades.UseMail().SendText(
+				"A game in your wishlist, "+game.Title+", is on sale!",
+				"Sale Game",
+				"SaleGame",
+				user.Email,
+			); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 }
 
 func (r *mutationResolver) UpdatePromo(ctx context.Context, id int64, discount float64, endAt time.Time) (*models.Promo, error) {

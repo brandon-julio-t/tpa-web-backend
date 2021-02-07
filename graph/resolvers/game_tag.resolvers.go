@@ -17,3 +17,8 @@ func (r *queryResolver) GetAllGameTags(ctx context.Context) ([]*models.GameTag, 
 	}
 	return tags, nil
 }
+
+func (r *queryResolver) SidebarGameTags(ctx context.Context) ([]*models.GameTag, error) {
+	tags := make([]*models.GameTag, 0)
+	return tags, facades.UseDB().Limit(12).Find(&tags).Error
+}

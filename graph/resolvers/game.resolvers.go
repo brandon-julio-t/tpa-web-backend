@@ -121,6 +121,8 @@ func (r *queryResolver) SearchGames(ctx context.Context, page int64, keyword str
 		db = repo.GetSpecialOffers()
 	case "top_sellers":
 		db = repo.GetTopSellers()
+	case "new_releases":
+		db = db.Order("created_at desc")
 	}
 
 	query := db.Model(new(models.Game)).
@@ -201,7 +203,7 @@ func (r *userResolver) Games(ctx context.Context, obj *models.User) ([]*models.G
 				Model(new(models.GameGiftTransactionDetail)).
 				Select("game_gift_transaction_detail_game_id").
 				Joins("join game_gift_transaction_headers ggth on game_gift_transaction_details.game_gift_transaction_header_id = ggth.id").
-				Where("game_gift_transaction_header_user_id = ?", obj.ID),
+				Where("game_gift_transaction_header_friend_id = ?", obj.ID),
 		).
 		Find(&games).
 		Error; err != nil {

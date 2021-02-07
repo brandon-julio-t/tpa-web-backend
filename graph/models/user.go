@@ -35,7 +35,7 @@ type User struct {
 	Status               string
 	Summary              string
 	WalletBalance        float64
-	UserWishlist         []*Game   `gorm:"many2many:wishlist;"`
+	UserWishlist         []*Game   `gorm:"many2many:wishlists;"`
 	UserCart             []*Game   `gorm:"many2many:cart;"`
 	SuspendedAt          time.Time `gorm:"index"`
 }

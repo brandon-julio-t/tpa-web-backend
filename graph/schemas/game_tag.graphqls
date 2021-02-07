@@ -5,4 +5,5 @@ type GameTag {
 
 extend type Query {
     getAllGameTags: [GameTag!]!
+    sidebarGameTags: [GameTag!]!
 }

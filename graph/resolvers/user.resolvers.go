@@ -120,6 +120,11 @@ func (r *userResolver) Level(ctx context.Context, obj *models.User) (int64, erro
 	return obj.Exp / 100, nil
 }
 
+func (r *userResolver) MostViewedGenres(ctx context.Context, obj *models.User) ([]*models.GameTag, error) {
+	tags := make([]*models.GameTag, 0)
+	return tags, facades.UseDB().Order("random()").Limit(5).Find(&tags).Error
+}
+
 func (r *userResolver) ProfilePicture(ctx context.Context, obj *models.User) (*models.AssetFile, error) {
 	return &obj.UserProfilePicture, facades.UseDB().Preload("UserProfilePicture").First(obj).Error
 }

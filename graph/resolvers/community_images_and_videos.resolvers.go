@@ -115,7 +115,7 @@ func (r *mutationResolver) CreateCommunityImagesAndVideos(ctx context.Context, i
 		User_: *user,
 	}
 
-	return entity, facades.UseDB().Debug().Create(entity).Error
+	return entity, facades.UseDB().Create(entity).Error
 }
 
 func (r *mutationResolver) LikeCreateCommunityImagesAndVideos(ctx context.Context, imageAndVideoID int64) (*models.CommunityImageAndVideo, error) {
