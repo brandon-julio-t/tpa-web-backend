@@ -227,6 +227,8 @@ type ComplexityRoot struct {
 		DenyUnsuspendRequests                 func(childComplexity int, id int64) int
 		DislikeCreateCommunityImagesAndVideos func(childComplexity int, imageAndVideoID int64) int
 		DownVoteReview                        func(childComplexity int, id int64) int
+		EditMiniProfileBackground             func(childComplexity int, id int64) int
+		EditProfileBackground                 func(childComplexity int, id int64) int
 		GiftWithCard                          func(childComplexity int, input models.Gift) int
 		GiftWithWallet                        func(childComplexity int, input models.Gift) int
 		IgnoreFriendRequest                   func(childComplexity int, userID int64) int
@@ -367,10 +369,14 @@ type ComplexityRoot struct {
 		ID                           func(childComplexity int) int
 		IngoingFriendRequests        func(childComplexity int) int
 		Level                        func(childComplexity int) int
+		MiniProfileBackground        func(childComplexity int) int
 		MostViewedGenres             func(childComplexity int) int
 		Notifications                func(childComplexity int) int
 		OutgoingFriendRequests       func(childComplexity int) int
+		OwnedMiniProfileBackgrounds  func(childComplexity int) int
+		OwnedProfileBackgrounds      func(childComplexity int) int
 		Points                       func(childComplexity int) int
+		ProfileBackground            func(childComplexity int) int
 		ProfilePicture               func(childComplexity int) int
 		ProfileTheme                 func(childComplexity int) int
 		RealName                     func(childComplexity int) int
@@ -482,6 +488,8 @@ type MutationResolver interface {
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
 	PurchasePointItem(ctx context.Context, id int64) (*models.PointItem, error)
+	EditProfileBackground(ctx context.Context, id int64) (*models.PointItem, error)
+	EditMiniProfileBackground(ctx context.Context, id int64) (*models.PointItem, error)
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
 	CreateProfileComment(ctx context.Context, profileID int64, comment string) (*models.ProfileComment, error)
 	DeleteProfileComment(ctx context.Context, id int64) (*models.ProfileComment, error)
@@ -568,6 +576,10 @@ type UserResolver interface {
 	ReceivedInvitesCount(ctx context.Context, obj *models.User) (int64, error)
 	ReceivedGiftsCount(ctx context.Context, obj *models.User) (int64, error)
 	ReceivedMessagesCount(ctx context.Context, obj *models.User) (int64, error)
+	OwnedProfileBackgrounds(ctx context.Context, obj *models.User) ([]*models.PointItem, error)
+	OwnedMiniProfileBackgrounds(ctx context.Context, obj *models.User) ([]*models.PointItem, error)
+	MiniProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error)
+	ProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error)
 	Stream(ctx context.Context, obj *models.User) (string, error)
 }
 
@@ -1496,6 +1508,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DownVoteReview(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.editMiniProfileBackground":
+		if e.complexity.Mutation.EditMiniProfileBackground == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editMiniProfileBackground_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditMiniProfileBackground(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.editProfileBackground":
+		if e.complexity.Mutation.EditProfileBackground == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editProfileBackground_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditProfileBackground(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.giftWithCard":
 		if e.complexity.Mutation.GiftWithCard == nil {
@@ -2487,6 +2523,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Level(childComplexity), true
 
+	case "User.miniProfileBackground":
+		if e.complexity.User.MiniProfileBackground == nil {
+			break
+		}
+
+		return e.complexity.User.MiniProfileBackground(childComplexity), true
+
 	case "User.mostViewedGenres":
 		if e.complexity.User.MostViewedGenres == nil {
 			break
@@ -2508,12 +2551,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.OutgoingFriendRequests(childComplexity), true
 
+	case "User.ownedMiniProfileBackgrounds":
+		if e.complexity.User.OwnedMiniProfileBackgrounds == nil {
+			break
+		}
+
+		return e.complexity.User.OwnedMiniProfileBackgrounds(childComplexity), true
+
+	case "User.ownedProfileBackgrounds":
+		if e.complexity.User.OwnedProfileBackgrounds == nil {
+			break
+		}
+
+		return e.complexity.User.OwnedProfileBackgrounds(childComplexity), true
+
 	case "User.points":
 		if e.complexity.User.Points == nil {
 			break
 		}
 
 		return e.complexity.User.Points(childComplexity), true
+
+	case "User.profileBackground":
+		if e.complexity.User.ProfileBackground == nil {
+			break
+		}
+
+		return e.complexity.User.ProfileBackground(childComplexity), true
 
 	case "User.profilePicture":
 		if e.complexity.User.ProfilePicture == nil {
@@ -3069,6 +3133,13 @@ extend type Mutation {
     image: AssetFile!
 }
 
+extend type User {
+    ownedProfileBackgrounds: [PointItem!]!
+    ownedMiniProfileBackgrounds: [PointItem!]!
+    miniProfileBackground: PointItem!
+    profileBackground: PointItem!
+}
+
 extend type Query {
     pointItemProfileBackgrounds: [PointItem!]!
     pointItemAvatarBorders: [PointItem!]!
@@ -3079,6 +3150,8 @@ extend type Query {
 
 extend type Mutation {
     purchasePointItem(id: ID!): PointItem!
+    editProfileBackground(id: ID!): PointItem!
+    editMiniProfileBackground(id: ID!): PointItem!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/private_message.graphqls", Input: `type PrivateMessage {
@@ -3653,6 +3726,36 @@ func (ec *executionContext) field_Mutation_dislikeCreateCommunityImagesAndVideos
 }
 
 func (ec *executionContext) field_Mutation_downVoteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editMiniProfileBackground_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editProfileBackground_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -9051,6 +9154,90 @@ func (ec *executionContext) _Mutation_purchasePointItem(ctx context.Context, fie
 	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_editProfileBackground(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editProfileBackground_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditProfileBackground(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_editMiniProfileBackground(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editMiniProfileBackground_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditMiniProfileBackground(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_addPrivateMessage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13518,6 +13705,146 @@ func (ec *executionContext) _User_receivedMessagesCount(ctx context.Context, fie
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_ownedProfileBackgrounds(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().OwnedProfileBackgrounds(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_ownedMiniProfileBackgrounds(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().OwnedMiniProfileBackgrounds(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_miniProfileBackground(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().MiniProfileBackground(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_profileBackground(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().ProfileBackground(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_stream(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -16478,6 +16805,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "editProfileBackground":
+			out.Values[i] = ec._Mutation_editProfileBackground(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "editMiniProfileBackground":
+			out.Values[i] = ec._Mutation_editMiniProfileBackground(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "addPrivateMessage":
 			out.Values[i] = ec._Mutation_addPrivateMessage(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -17755,6 +18092,62 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_receivedMessagesCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "ownedProfileBackgrounds":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ownedProfileBackgrounds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "ownedMiniProfileBackgrounds":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ownedMiniProfileBackgrounds(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "miniProfileBackground":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_miniProfileBackground(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "profileBackground":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_profileBackground(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

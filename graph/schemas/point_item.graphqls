@@ -6,6 +6,13 @@ type PointItem {
     image: AssetFile!
 }
 
+extend type User {
+    ownedProfileBackgrounds: [PointItem!]!
+    ownedMiniProfileBackgrounds: [PointItem!]!
+    miniProfileBackground: PointItem!
+    profileBackground: PointItem!
+}
+
 extend type Query {
     pointItemProfileBackgrounds: [PointItem!]!
     pointItemAvatarBorders: [PointItem!]!
@@ -16,4 +23,6 @@ extend type Query {
 
 extend type Mutation {
     purchasePointItem(id: ID!): PointItem!
+    editProfileBackground(id: ID!): PointItem!
+    editMiniProfileBackground(id: ID!): PointItem!
 }

@@ -16,28 +16,31 @@ import (
 )
 
 type User struct {
-	ID                   int64  `gorm:"primaryKey"`
-	AccountName          string `gorm:"uniqueIndex"`
-	Country              Country
-	CountryID            int64
-	CustomURL            string `gorm:"uniqueIndex"`
-	DisplayName          string
-	Email                string `gorm:"uniqueIndex"`
-	Exp                  int64
-	Friends              []*Friendship
-	FriendCode           string `gorm:"uniqueIndex"`
-	Password             string
-	UserProfilePictureID int64
-	UserProfilePicture   AssetFile
-	Points               int64
-	ProfileTheme         string
-	RealName             string
-	Status               string
-	Summary              string
-	WalletBalance        float64
-	UserWishlist         []*Game   `gorm:"many2many:wishlists;"`
-	UserCart             []*Game   `gorm:"many2many:cart;"`
-	SuspendedAt          time.Time `gorm:"index"`
+	ID                      int64  `gorm:"primaryKey"`
+	AccountName             string `gorm:"uniqueIndex"`
+	Country                 Country
+	CountryID               int64
+	CustomURL               string `gorm:"uniqueIndex"`
+	DisplayName             string
+	Email                   string `gorm:"uniqueIndex"`
+	Exp                     int64
+	Friends                 []*Friendship
+	FriendCode              string `gorm:"uniqueIndex"`
+	MiniProfileBackgroundID int64
+	Password                string
+	UserProfilePictureID    int64
+	UserProfilePicture      AssetFile
+	Points                  int64
+	ProfileBackgroundID     int64
+	AvatarFrameID           int64
+	ProfileTheme            string
+	RealName                string
+	Status                  string
+	Summary                 string
+	WalletBalance           float64
+	UserWishlist            []*Game   `gorm:"many2many:wishlists;"`
+	UserCart                []*Game   `gorm:"many2many:cart;"`
+	SuspendedAt             time.Time `gorm:"index"`
 }
 
 func (u *User) BeforeCreate(tx *gorm.DB) error {

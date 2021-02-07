@@ -92,7 +92,7 @@ func SeedUsers() error {
 			Email:       user.Email,
 			Exp:         faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),
-			Points:      faker.Number().NumberInt64(faker.Number().NumberInt(1)),
+			Points:      100000,
 			Status:      faker.RandomChoice([]string{"online", "offline", "playing"}),
 			Summary:     faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 			UserProfilePicture: models.AssetFile{

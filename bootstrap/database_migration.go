@@ -54,6 +54,7 @@ func init() {
 		new(models.CommunityDiscussionComment),
 
 		new(models.PointItem),
+		new(models.PointItemPurchase),
 	}
 
 	if err := facades.UseDB().Migrator().DropTable(entities...); err != nil {

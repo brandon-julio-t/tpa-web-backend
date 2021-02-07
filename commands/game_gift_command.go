@@ -8,6 +8,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/services/notification_service"
 	"gorm.io/gorm"
 	"html/template"
+	"math"
 	"path/filepath"
 	"time"
 )
@@ -122,6 +123,7 @@ func (g GameGiftCommand) Execute() error {
 
 
 	g.User.Exp += 50
+	g.User.Points += int64(math.Round(grandTotal / 106 * 15000))
 	return g.DB.Save(&g.User).Error
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"gorm.io/gorm"
 	"html/template"
+	"math"
 	"path/filepath"
 	"time"
 )
@@ -99,5 +100,6 @@ func (g GamePurchaseCommand) Execute() error {
 	}
 
 	g.User.Exp += 50
+	g.User.Points += int64(math.Round(g.GrandTotal / 106 * 15000))
 	return g.DB.Save(&g.User).Error
 }

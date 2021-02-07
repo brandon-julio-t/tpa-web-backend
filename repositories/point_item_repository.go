@@ -7,6 +7,37 @@ import (
 
 type PointItemRepository struct{}
 
+func (PointItemRepository) GetByIDAndCategory(id int64, category string) (*models.PointItem, error) {
+	item := new(models.PointItem)
+	return item, facades.UseDB().
+		Where("category = ?", category).
+		First(item, id).
+		Error
+}
+
+func (PointItemRepository) GetAllByUserAndCategory(user *models.User, category string) ([]*models.PointItem, error) {
+	purchasedItems := make([]*models.PointItemPurchase, 0)
+	if err := facades.UseDB().
+		Joins("join point_items pi on pi.id = point_item_purchases.point_item_id").
+		Where("user_id = ?", user.ID).
+		Where("category = ?", category).
+		Find(&purchasedItems).
+		Error; err != nil {
+		return nil, err
+	}
+
+	items := make([]*models.PointItem, 0)
+	for _, purchased := range purchasedItems {
+		if err := facades.UseDB().Preload("Image_").First(&purchased.PointItem_).Error; err != nil {
+			return nil, err
+		}
+
+		items = append(items, &purchased.PointItem_)
+	}
+
+	return items, nil
+}
+
 func (PointItemRepository) GetProfileBackgrounds() ([]*models.PointItem, error) {
 	items := make([]*models.PointItem, 0)
 	return items, facades.UseDB().Find(&items, "category = ?", "profile_background").Error
