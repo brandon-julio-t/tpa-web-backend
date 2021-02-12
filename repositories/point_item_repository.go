@@ -28,7 +28,7 @@ func (PointItemRepository) GetAllByUserAndCategory(user *models.User, category s
 
 	items := make([]*models.PointItem, 0)
 	for _, purchased := range purchasedItems {
-		if err := facades.UseDB().Preload("Image_").First(&purchased.PointItem_).Error; err != nil {
+		if err := facades.UseDB().Preload("ImageRef").First(&purchased.PointItem_).Error; err != nil {
 			return nil, err
 		}
 

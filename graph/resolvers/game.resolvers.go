@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+	"errors"
 	"math"
 	"strings"
 
@@ -57,14 +58,41 @@ func (r *gameSlideshowResolver) File(ctx context.Context, obj *models.GameSlides
 }
 
 func (r *mutationResolver) CreateGame(ctx context.Context, input models.CreateGame) (*models.Game, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.AccountName != "Admin" {
+		return nil, errors.New("unauthorized")
+	}
+
 	return new(repositories.GameRepository).Create(input)
 }
 
 func (r *mutationResolver) UpdateGame(ctx context.Context, input models.UpdateGame) (*models.Game, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.AccountName != "Admin" {
+		return nil, errors.New("unauthorized")
+	}
+
 	return new(repositories.GameRepository).Update(input)
 }
 
 func (r *mutationResolver) DeleteGame(ctx context.Context, id int64) (*models.Game, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if user.AccountName != "Admin" {
+		return nil, errors.New("unauthorized")
+	}
+
 	return new(repositories.GameRepository).Delete(id)
 }
 

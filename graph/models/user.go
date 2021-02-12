@@ -25,14 +25,14 @@ type User struct {
 	Email                   string `gorm:"uniqueIndex"`
 	Exp                     int64
 	Friends                 []*Friendship
-	FriendCode              string `gorm:"uniqueIndex"`
+	FriendCode              string        `gorm:"uniqueIndex"`
 	MiniProfileBackgroundID int64
 	Password                string
 	UserProfilePictureID    int64
 	UserProfilePicture      AssetFile
 	Points                  int64
 	ProfileBackgroundID     int64
-	AvatarFrameID           int64
+	AvatarBorderID          int64
 	ProfileTheme            string
 	RealName                string
 	Status                  string

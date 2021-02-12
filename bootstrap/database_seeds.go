@@ -33,6 +33,11 @@ func init() {
 				database_seeds.SeedCommunityDiscussionComments,
 
 				database_seeds.SeedPointItems,
+
+				database_seeds.SeedMarketItems,
+				database_seeds.SeedMarketItemOffers,
+				database_seeds.SeedMarketItemTransactions,
+				database_seeds.SeedInventory,
 			} {
 				if err := seed(); err != nil {
 					return err

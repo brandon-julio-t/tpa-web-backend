@@ -5,6 +5,7 @@ package resolvers
 
 import (
 	"context"
+
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
 	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
@@ -34,6 +35,21 @@ func (r *mutationResolver) PurchasePointItem(ctx context.Context, id int64) (*mo
 			PointItem_: *item,
 		}).Error
 	})
+}
+
+func (r *mutationResolver) EditAvatarBorder(ctx context.Context, id int64) (*models.PointItem, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	item, err := new(repositories.PointItemRepository).GetByIDAndCategory(id, "avatar_border")
+	if err != nil {
+		return nil, err
+	}
+
+	user.AvatarBorderID = item.ID
+	return item, facades.UseDB().Save(user).Error
 }
 
 func (r *mutationResolver) EditProfileBackground(ctx context.Context, id int64) (*models.PointItem, error) {
@@ -86,6 +102,24 @@ func (r *queryResolver) PointItemMiniProfileBackgrounds(ctx context.Context) ([]
 	return new(repositories.PointItemRepository).GetMiniProfileBackgrounds()
 }
 
+func (r *userResolver) AvatarBorder(ctx context.Context, obj *models.User) (*models.PointItem, error) {
+	if obj.AvatarBorderID == 0 {
+		return nil, nil
+	}
+	return new(repositories.PointItemRepository).GetByIDAndCategory(obj.AvatarBorderID, "avatar_border")
+}
+
+func (r *userResolver) MiniProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error) {
+	if obj.MiniProfileBackgroundID == 0 {
+		return nil, nil
+	}
+	return new(repositories.PointItemRepository).GetByIDAndCategory(obj.MiniProfileBackgroundID, "mini_profile_background")
+}
+
+func (r *userResolver) OwnedAvatarBorders(ctx context.Context, obj *models.User) ([]*models.PointItem, error) {
+	return new(repositories.PointItemRepository).GetAllByUserAndCategory(obj, "avatar_border")
+}
+
 func (r *userResolver) OwnedProfileBackgrounds(ctx context.Context, obj *models.User) ([]*models.PointItem, error) {
 	return new(repositories.PointItemRepository).GetAllByUserAndCategory(obj, "profile_background")
 }
@@ -94,10 +128,9 @@ func (r *userResolver) OwnedMiniProfileBackgrounds(ctx context.Context, obj *mod
 	return new(repositories.PointItemRepository).GetAllByUserAndCategory(obj, "mini_profile_background")
 }
 
-func (r *userResolver) MiniProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error) {
-	return new(repositories.PointItemRepository).GetByIDAndCategory(obj.MiniProfileBackgroundID, "mini_profile_background")
-}
-
 func (r *userResolver) ProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error) {
+	if obj.ProfileBackgroundID == 0 {
+		return nil, nil
+	}
 	return new(repositories.PointItemRepository).GetByIDAndCategory(obj.ProfileBackgroundID, "profile_background")
 }

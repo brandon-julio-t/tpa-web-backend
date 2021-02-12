@@ -1,0 +1,23 @@
+type MarketItem {
+    id: ID!
+    description: String!
+    game: Game!
+    image: AssetFile!
+    name: String!
+    startingPrice: Float!
+    transactionsCount: Int!
+}
+
+type MarketItemPagination {
+    data: [MarketItem!]!
+    totalPages: Int!
+}
+
+extend type User {
+    gamesByOwnedMarketItems: [Game!]!
+    marketItemsByGame(page: Int!, gameId: ID!): MarketItemPagination!
+}
+
+extend type Query {
+    marketItems(page: Int!): MarketItemPagination!
+}

@@ -42,6 +42,12 @@ func init() {
 		new(models.ProfileComment),
 		new(models.Notification),
 
+		new(models.MarketItem),
+		new(models.MarketItemOffer),
+		new(models.MarketItemTransaction),
+
+		new(models.Inventory),
+
 		new(models.GamePurchaseTransactionHeader),
 		new(models.GamePurchaseTransactionDetail),
 		new(models.GameGiftTransactionHeader),

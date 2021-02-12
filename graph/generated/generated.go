@@ -46,6 +46,7 @@ type ResolverRoot interface {
 	Game() GameResolver
 	GameReview() GameReviewResolver
 	GameSlideshow() GameSlideshowResolver
+	MarketItem() MarketItemResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
@@ -205,6 +206,21 @@ type ComplexityRoot struct {
 		Name func(childComplexity int) int
 	}
 
+	MarketItem struct {
+		Description       func(childComplexity int) int
+		Game_             func(childComplexity int) int
+		ID                func(childComplexity int) int
+		Image             func(childComplexity int) int
+		Name              func(childComplexity int) int
+		StartingPrice     func(childComplexity int) int
+		TransactionsCount func(childComplexity int) int
+	}
+
+	MarketItemPagination struct {
+		Data       func(childComplexity int) int
+		TotalPages func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AcceptFriendRequest                   func(childComplexity int, userID int64) int
 		AddPrivateMessage                     func(childComplexity int, friendID int64, text string) int
@@ -227,6 +243,7 @@ type ComplexityRoot struct {
 		DenyUnsuspendRequests                 func(childComplexity int, id int64) int
 		DislikeCreateCommunityImagesAndVideos func(childComplexity int, imageAndVideoID int64) int
 		DownVoteReview                        func(childComplexity int, id int64) int
+		EditAvatarBorder                      func(childComplexity int, id int64) int
 		EditMiniProfileBackground             func(childComplexity int, id int64) int
 		EditProfileBackground                 func(childComplexity int, id int64) int
 		GiftWithCard                          func(childComplexity int, input models.Gift) int
@@ -318,6 +335,7 @@ type ComplexityRoot struct {
 		GetGameByID                     func(childComplexity int, id int64) int
 		GetProfile                      func(childComplexity int, customURL string) int
 		GetReportsByUser                func(childComplexity int, id int64) int
+		MarketItems                     func(childComplexity int, page int64) int
 		NewAndTrending                  func(childComplexity int) int
 		NotificationByID                func(childComplexity int, id int64) int
 		PointItemAnimatedAvatars        func(childComplexity int) int
@@ -357,6 +375,7 @@ type ComplexityRoot struct {
 
 	User struct {
 		AccountName                  func(childComplexity int) int
+		AvatarBorder                 func(childComplexity int) int
 		Cart                         func(childComplexity int) int
 		CartCount                    func(childComplexity int) int
 		Country                      func(childComplexity int) int
@@ -366,13 +385,16 @@ type ComplexityRoot struct {
 		FriendCode                   func(childComplexity int) int
 		Friends                      func(childComplexity int) int
 		Games                        func(childComplexity int) int
+		GamesByOwnedMarketItems      func(childComplexity int) int
 		ID                           func(childComplexity int) int
 		IngoingFriendRequests        func(childComplexity int) int
 		Level                        func(childComplexity int) int
+		MarketItemsByGame            func(childComplexity int, page int64, gameID int64) int
 		MiniProfileBackground        func(childComplexity int) int
 		MostViewedGenres             func(childComplexity int) int
 		Notifications                func(childComplexity int) int
 		OutgoingFriendRequests       func(childComplexity int) int
+		OwnedAvatarBorders           func(childComplexity int) int
 		OwnedMiniProfileBackgrounds  func(childComplexity int) int
 		OwnedProfileBackgrounds      func(childComplexity int) int
 		Points                       func(childComplexity int) int
@@ -456,6 +478,12 @@ type GameReviewResolver interface {
 type GameSlideshowResolver interface {
 	File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error)
 }
+type MarketItemResolver interface {
+	Image(ctx context.Context, obj *models.MarketItem) (*models.AssetFile, error)
+
+	StartingPrice(ctx context.Context, obj *models.MarketItem) (float64, error)
+	TransactionsCount(ctx context.Context, obj *models.MarketItem) (int64, error)
+}
 type MutationResolver interface {
 	Login(ctx context.Context, accountName string, password string, rememberMe bool) (*models.User, error)
 	Logout(ctx context.Context) (*models.User, error)
@@ -488,6 +516,7 @@ type MutationResolver interface {
 	SendOtp(ctx context.Context, email string) (bool, error)
 	VerifyOtp(ctx context.Context, otp string) (bool, error)
 	PurchasePointItem(ctx context.Context, id int64) (*models.PointItem, error)
+	EditAvatarBorder(ctx context.Context, id int64) (*models.PointItem, error)
 	EditProfileBackground(ctx context.Context, id int64) (*models.PointItem, error)
 	EditMiniProfileBackground(ctx context.Context, id int64) (*models.PointItem, error)
 	AddPrivateMessage(ctx context.Context, friendID int64, text string) (*models.PrivateMessage, error)
@@ -533,6 +562,7 @@ type QueryResolver interface {
 	TopSellers(ctx context.Context) ([]*models.Game, error)
 	GetAllGameTags(ctx context.Context) ([]*models.GameTag, error)
 	SidebarGameTags(ctx context.Context) ([]*models.GameTag, error)
+	MarketItems(ctx context.Context, page int64) (*models.MarketItemPagination, error)
 	NotificationByID(ctx context.Context, id int64) (*models.Notification, error)
 	PointItemProfileBackgrounds(ctx context.Context) ([]*models.PointItem, error)
 	PointItemAvatarBorders(ctx context.Context) ([]*models.PointItem, error)
@@ -571,14 +601,18 @@ type UserResolver interface {
 	OutgoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
 	IngoingFriendRequests(ctx context.Context, obj *models.User) ([]*models.User, error)
 	Games(ctx context.Context, obj *models.User) ([]*models.Game, error)
+	GamesByOwnedMarketItems(ctx context.Context, obj *models.User) ([]*models.Game, error)
+	MarketItemsByGame(ctx context.Context, obj *models.User, page int64, gameID int64) (*models.MarketItemPagination, error)
 	Notifications(ctx context.Context, obj *models.User) ([]*models.Notification, error)
 	ReceivedProfileCommentsCount(ctx context.Context, obj *models.User) (int64, error)
 	ReceivedInvitesCount(ctx context.Context, obj *models.User) (int64, error)
 	ReceivedGiftsCount(ctx context.Context, obj *models.User) (int64, error)
 	ReceivedMessagesCount(ctx context.Context, obj *models.User) (int64, error)
+	AvatarBorder(ctx context.Context, obj *models.User) (*models.PointItem, error)
+	MiniProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error)
+	OwnedAvatarBorders(ctx context.Context, obj *models.User) ([]*models.PointItem, error)
 	OwnedProfileBackgrounds(ctx context.Context, obj *models.User) ([]*models.PointItem, error)
 	OwnedMiniProfileBackgrounds(ctx context.Context, obj *models.User) ([]*models.PointItem, error)
-	MiniProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error)
 	ProfileBackground(ctx context.Context, obj *models.User) (*models.PointItem, error)
 	Stream(ctx context.Context, obj *models.User) (string, error)
 }
@@ -1272,6 +1306,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.GameTag.Name(childComplexity), true
 
+	case "MarketItem.description":
+		if e.complexity.MarketItem.Description == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.Description(childComplexity), true
+
+	case "MarketItem.game":
+		if e.complexity.MarketItem.Game_ == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.Game_(childComplexity), true
+
+	case "MarketItem.id":
+		if e.complexity.MarketItem.ID == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.ID(childComplexity), true
+
+	case "MarketItem.image":
+		if e.complexity.MarketItem.Image == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.Image(childComplexity), true
+
+	case "MarketItem.name":
+		if e.complexity.MarketItem.Name == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.Name(childComplexity), true
+
+	case "MarketItem.startingPrice":
+		if e.complexity.MarketItem.StartingPrice == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.StartingPrice(childComplexity), true
+
+	case "MarketItem.transactionsCount":
+		if e.complexity.MarketItem.TransactionsCount == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.TransactionsCount(childComplexity), true
+
+	case "MarketItemPagination.data":
+		if e.complexity.MarketItemPagination.Data == nil {
+			break
+		}
+
+		return e.complexity.MarketItemPagination.Data(childComplexity), true
+
+	case "MarketItemPagination.totalPages":
+		if e.complexity.MarketItemPagination.TotalPages == nil {
+			break
+		}
+
+		return e.complexity.MarketItemPagination.TotalPages(childComplexity), true
+
 	case "Mutation.acceptFriendRequest":
 		if e.complexity.Mutation.AcceptFriendRequest == nil {
 			break
@@ -1508,6 +1605,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.DownVoteReview(childComplexity, args["id"].(int64)), true
+
+	case "Mutation.editAvatarBorder":
+		if e.complexity.Mutation.EditAvatarBorder == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editAvatarBorder_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditAvatarBorder(childComplexity, args["id"].(int64)), true
 
 	case "Mutation.editMiniProfileBackground":
 		if e.complexity.Mutation.EditMiniProfileBackground == nil {
@@ -2179,6 +2288,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetReportsByUser(childComplexity, args["id"].(int64)), true
 
+	case "Query.marketItems":
+		if e.complexity.Query.MarketItems == nil {
+			break
+		}
+
+		args, err := ec.field_Query_marketItems_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MarketItems(childComplexity, args["page"].(int64)), true
+
 	case "Query.newAndTrending":
 		if e.complexity.Query.NewAndTrending == nil {
 			break
@@ -2439,6 +2560,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.AccountName(childComplexity), true
 
+	case "User.avatarBorder":
+		if e.complexity.User.AvatarBorder == nil {
+			break
+		}
+
+		return e.complexity.User.AvatarBorder(childComplexity), true
+
 	case "User.cart":
 		if e.complexity.User.Cart == nil {
 			break
@@ -2502,6 +2630,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Games(childComplexity), true
 
+	case "User.gamesByOwnedMarketItems":
+		if e.complexity.User.GamesByOwnedMarketItems == nil {
+			break
+		}
+
+		return e.complexity.User.GamesByOwnedMarketItems(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -2522,6 +2657,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Level(childComplexity), true
+
+	case "User.marketItemsByGame":
+		if e.complexity.User.MarketItemsByGame == nil {
+			break
+		}
+
+		args, err := ec.field_User_marketItemsByGame_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.MarketItemsByGame(childComplexity, args["page"].(int64), args["gameId"].(int64)), true
 
 	case "User.miniProfileBackground":
 		if e.complexity.User.MiniProfileBackground == nil {
@@ -2550,6 +2697,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.OutgoingFriendRequests(childComplexity), true
+
+	case "User.ownedAvatarBorders":
+		if e.complexity.User.OwnedAvatarBorders == nil {
+			break
+		}
+
+		return e.complexity.User.OwnedAvatarBorders(childComplexity), true
 
 	case "User.ownedMiniProfileBackgrounds":
 		if e.complexity.User.OwnedMiniProfileBackgrounds == nil {
@@ -3098,6 +3252,29 @@ extend type Query {
     getAllGameTags: [GameTag!]!
     sidebarGameTags: [GameTag!]!
 }`, BuiltIn: false},
+	{Name: "graph/schemas/market_item.graphqls", Input: `type MarketItem {
+    id: ID!
+    description: String!
+    game: Game!
+    image: AssetFile!
+    name: String!
+    startingPrice: Float!
+    transactionsCount: Int!
+}
+
+type MarketItemPagination {
+    data: [MarketItem!]!
+    totalPages: Int!
+}
+
+extend type User {
+    gamesByOwnedMarketItems: [Game!]!
+    marketItemsByGame(page: Int!, gameId: ID!): MarketItemPagination!
+}
+
+extend type Query {
+    marketItems(page: Int!): MarketItemPagination!
+}`, BuiltIn: false},
 	{Name: "graph/schemas/notification.graphqls", Input: `type Notification {
     id: ID!
     content: String!
@@ -3134,10 +3311,12 @@ extend type Mutation {
 }
 
 extend type User {
+    avatarBorder: PointItem
+    miniProfileBackground: PointItem
+    ownedAvatarBorders: [PointItem!]!
     ownedProfileBackgrounds: [PointItem!]!
     ownedMiniProfileBackgrounds: [PointItem!]!
-    miniProfileBackground: PointItem!
-    profileBackground: PointItem!
+    profileBackground: PointItem
 }
 
 extend type Query {
@@ -3150,6 +3329,7 @@ extend type Query {
 
 extend type Mutation {
     purchasePointItem(id: ID!): PointItem!
+    editAvatarBorder(id: ID!): PointItem!
     editProfileBackground(id: ID!): PointItem!
     editMiniProfileBackground(id: ID!): PointItem!
 }
@@ -3726,6 +3906,21 @@ func (ec *executionContext) field_Mutation_dislikeCreateCommunityImagesAndVideos
 }
 
 func (ec *executionContext) field_Mutation_downVoteReview_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editAvatarBorder_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
@@ -4394,6 +4589,21 @@ func (ec *executionContext) field_Query_getReportsByUser_args(ctx context.Contex
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_marketItems_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_notificationById_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -4577,6 +4787,30 @@ func (ec *executionContext) field_Subscription_onNewIceCandidate_args(ctx contex
 		}
 	}
 	args["accountName"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_User_marketItemsByGame_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["page"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("page"))
+		arg0, err = ec.unmarshalNInt2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["page"] = arg0
+	var arg1 int64
+	if tmp, ok := rawArgs["gameId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameId"))
+		arg1, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["gameId"] = arg1
 	return args, nil
 }
 
@@ -7880,6 +8114,321 @@ func (ec *executionContext) _GameTag_name(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _MarketItem_id(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_description(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_game(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Game_, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(models.Game)
+	fc.Result = res
+	return ec.marshalNGame2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_image(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MarketItem().Image(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.AssetFile)
+	fc.Result = res
+	return ec.marshalNAssetFile2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐAssetFile(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_name(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_startingPrice(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MarketItem().StartingPrice(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItem_transactionsCount(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MarketItem().TransactionsCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItemPagination_data(ctx context.Context, field graphql.CollectedField, obj *models.MarketItemPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItemPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Data, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.MarketItem)
+	fc.Result = res
+	return ec.marshalNMarketItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItemPagination_totalPages(ctx context.Context, field graphql.CollectedField, obj *models.MarketItemPagination) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItemPagination",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalPages, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9138,6 +9687,48 @@ func (ec *executionContext) _Mutation_purchasePointItem(ctx context.Context, fie
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().PurchasePointItem(rctx, args["id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_editAvatarBorder(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editAvatarBorder_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditAvatarBorder(rctx, args["id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11612,6 +12203,48 @@ func (ec *executionContext) _Query_sidebarGameTags(ctx context.Context, field gr
 	return ec.marshalNGameTag2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameTagᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_marketItems(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_marketItems_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MarketItems(rctx, args["page"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.MarketItemPagination)
+	fc.Result = res
+	return ec.marshalNMarketItemPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemPagination(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_notificationById(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13530,6 +14163,83 @@ func (ec *executionContext) _User_games(ctx context.Context, field graphql.Colle
 	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_gamesByOwnedMarketItems(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().GamesByOwnedMarketItems(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGameᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_marketItemsByGame(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_User_marketItemsByGame_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().MarketItemsByGame(rctx, obj, args["page"].(int64), args["gameId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.MarketItemPagination)
+	fc.Result = res
+	return ec.marshalNMarketItemPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemPagination(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_notifications(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13705,6 +14415,105 @@ func (ec *executionContext) _User_receivedMessagesCount(ctx context.Context, fie
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _User_avatarBorder(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().AvatarBorder(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalOPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_miniProfileBackground(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().MiniProfileBackground(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*models.PointItem)
+	fc.Result = res
+	return ec.marshalOPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_ownedAvatarBorders(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().OwnedAvatarBorders(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.PointItem)
+	fc.Result = res
+	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_ownedProfileBackgrounds(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13775,41 +14584,6 @@ func (ec *executionContext) _User_ownedMiniProfileBackgrounds(ctx context.Contex
 	return ec.marshalNPointItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItemᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_miniProfileBackground(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().MiniProfileBackground(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*models.PointItem)
-	fc.Result = res
-	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _User_profileBackground(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13835,14 +14609,11 @@ func (ec *executionContext) _User_profileBackground(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*models.PointItem)
 	fc.Result = res
-	return ec.marshalNPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
+	return ec.marshalOPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_stream(ctx context.Context, field graphql.CollectedField, obj *models.User) (ret graphql.Marshaler) {
@@ -16635,6 +17406,122 @@ func (ec *executionContext) _GameTag(ctx context.Context, sel ast.SelectionSet, 
 	return out
 }
 
+var marketItemImplementors = []string{"MarketItem"}
+
+func (ec *executionContext) _MarketItem(ctx context.Context, sel ast.SelectionSet, obj *models.MarketItem) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, marketItemImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarketItem")
+		case "id":
+			out.Values[i] = ec._MarketItem_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._MarketItem_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "game":
+			out.Values[i] = ec._MarketItem_game(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "image":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MarketItem_image(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._MarketItem_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "startingPrice":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MarketItem_startingPrice(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "transactionsCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MarketItem_transactionsCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var marketItemPaginationImplementors = []string{"MarketItemPagination"}
+
+func (ec *executionContext) _MarketItemPagination(ctx context.Context, sel ast.SelectionSet, obj *models.MarketItemPagination) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, marketItemPaginationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarketItemPagination")
+		case "data":
+			out.Values[i] = ec._MarketItemPagination_data(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalPages":
+			out.Values[i] = ec._MarketItemPagination_totalPages(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -16802,6 +17689,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "purchasePointItem":
 			out.Values[i] = ec._Mutation_purchasePointItem(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "editAvatarBorder":
+			out.Values[i] = ec._Mutation_editAvatarBorder(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -17471,6 +18363,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "marketItems":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_marketItems(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "notificationById":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18027,6 +18933,34 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "gamesByOwnedMarketItems":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_gamesByOwnedMarketItems(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "marketItemsByGame":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_marketItemsByGame(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "notifications":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18097,6 +19031,42 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
+		case "avatarBorder":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_avatarBorder(ctx, field, obj)
+				return res
+			})
+		case "miniProfileBackground":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_miniProfileBackground(ctx, field, obj)
+				return res
+			})
+		case "ownedAvatarBorders":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_ownedAvatarBorders(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "ownedProfileBackgrounds":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18125,20 +19095,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 				}
 				return res
 			})
-		case "miniProfileBackground":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_miniProfileBackground(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "profileBackground":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18148,9 +19104,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_profileBackground(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "stream":
@@ -19231,6 +20184,67 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) marshalNMarketItem2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.MarketItem) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMarketItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItem(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNMarketItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItem(ctx context.Context, sel ast.SelectionSet, v *models.MarketItem) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MarketItem(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMarketItemPagination2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemPagination(ctx context.Context, sel ast.SelectionSet, v models.MarketItemPagination) graphql.Marshaler {
+	return ec._MarketItemPagination(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMarketItemPagination2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemPagination(ctx context.Context, sel ast.SelectionSet, v *models.MarketItemPagination) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MarketItemPagination(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNNotification2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v models.Notification) graphql.Marshaler {
 	return ec._Notification(ctx, sel, &v)
 }
@@ -20015,6 +21029,13 @@ func (ec *executionContext) marshalOCommunityDiscussion2ᚖgithubᚗcomᚋbrando
 		return graphql.Null
 	}
 	return ec._CommunityDiscussion(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPointItem2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐPointItem(ctx context.Context, sel ast.SelectionSet, v *models.PointItem) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PointItem(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

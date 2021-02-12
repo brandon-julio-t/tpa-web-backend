@@ -7,10 +7,12 @@ type PointItem {
 }
 
 extend type User {
+    avatarBorder: PointItem
+    miniProfileBackground: PointItem
+    ownedAvatarBorders: [PointItem!]!
     ownedProfileBackgrounds: [PointItem!]!
     ownedMiniProfileBackgrounds: [PointItem!]!
-    miniProfileBackground: PointItem!
-    profileBackground: PointItem!
+    profileBackground: PointItem
 }
 
 extend type Query {
@@ -23,6 +25,7 @@ extend type Query {
 
 extend type Mutation {
     purchasePointItem(id: ID!): PointItem!
+    editAvatarBorder(id: ID!): PointItem!
     editProfileBackground(id: ID!): PointItem!
     editMiniProfileBackground(id: ID!): PointItem!
 }

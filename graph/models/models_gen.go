@@ -57,6 +57,11 @@ type Gift struct {
 	Signature string `json:"signature"`
 }
 
+type MarketItemPagination struct {
+	Data       []*MarketItem `json:"data"`
+	TotalPages int64         `json:"totalPages"`
+}
+
 type PostCommunityDiscussion struct {
 	GameID int64  `json:"gameId"`
 	Body   string `json:"body"`
