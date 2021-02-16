@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/apollotracing"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -85,6 +86,7 @@ func main() {
 		},
 	})
 	gql.Use(extension.Introspection{})
+	gql.Use(apollotracing.Tracer{})
 
 	r.Any("/graphql", func(context *gin.Context) {
 		gql.ServeHTTP(context.Writer, context.Request)

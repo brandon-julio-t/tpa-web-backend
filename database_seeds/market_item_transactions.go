@@ -3,9 +3,18 @@ package database_seeds
 import (
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
+	"syreclabs.com/go/faker"
 )
 
 func SeedMarketItemTransactions() error {
+	if err := randomTransactions("buy"); err != nil {
+		return err
+	}
+
+	return randomTransactions("sell")
+}
+
+func randomTransactions(category string) error {
 	for i := 0; i < 100; i++ {
 		buyer := new(models.User)
 		if err := facades.UseDB().Order("random()").First(buyer).Error; err != nil {
@@ -23,8 +32,10 @@ func SeedMarketItemTransactions() error {
 		}
 
 		if err := facades.UseDB().Create(&models.MarketItemTransaction{
+			Category:    category,
 			Buyer_:      *buyer,
 			MarketItem_: *item,
+			Price:       float64(faker.Commerce().Price()),
 			Seller_:     *seller,
 		}).Error; err != nil {
 			return err

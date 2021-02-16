@@ -3,6 +3,7 @@ package database_seeds
 import (
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
 	"github.com/brandon-julio-t/tpa-web-backend/graph/models"
@@ -24,6 +25,7 @@ func SeedMarketItems() error {
 	for _, game := range games {
 		for i := 0; i < 20; i++ {
 			if err := facades.UseDB().Create(&models.MarketItem{
+				Category:    strings.Join(faker.Lorem().Words(faker.Number().NumberInt(1)), ","),
 				Description: faker.Lorem().Paragraph(faker.Number().NumberInt(1)),
 				Game_:       *game,
 				ImageRef: models.AssetFile{

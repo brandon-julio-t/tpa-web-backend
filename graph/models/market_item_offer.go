@@ -9,6 +9,7 @@ type MarketItemOffer struct {
 	MarketItemID int64
 	MarketItem_  MarketItem `gorm:"foreignKey:MarketItemID"`
 	Price        float64
+	Quantity     int64
 	UserID       int64
 	User_        User `gorm:"foreignKey:UserID"`
 }

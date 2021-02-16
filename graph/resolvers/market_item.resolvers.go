@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 	"errors"
+	"github.com/brandon-julio-t/tpa-web-backend/middlewares"
 	"math"
 
 	"github.com/brandon-julio-t/tpa-web-backend/facades"
@@ -14,8 +15,70 @@ import (
 	"gorm.io/gorm"
 )
 
+func (r *marketItemResolver) BuyPrices(ctx context.Context, obj *models.MarketItem) ([]*models.MarketItemPrice, error) {
+	rows, err := facades.UseDB().
+		Model(new(models.MarketItemTransaction)).
+		Select("price", "count(price) as price_counts").
+		Where("market_item_id = ?", obj.ID).
+		Where("category = ?", "buy").
+		Group("price").
+		Order("price desc").
+		Limit(5).
+		Rows()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	prices := make([]*models.MarketItemPrice, 0)
+	for rows.Next() {
+		price := new(models.MarketItemPrice)
+
+		if err := rows.Scan(&price.Price, &price.Quantity); err != nil {
+			return nil, err
+		}
+
+		prices = append(prices, price)
+	}
+
+	return prices, nil
+}
+
 func (r *marketItemResolver) Image(ctx context.Context, obj *models.MarketItem) (*models.AssetFile, error) {
 	return &obj.ImageRef, facades.UseDB().Preload("ImageRef").First(obj).Error
+}
+
+func (r *marketItemResolver) SalePrices(ctx context.Context, obj *models.MarketItem) ([]*models.MarketItemPrice, error) {
+	rows, err := facades.UseDB().
+		Model(new(models.MarketItemTransaction)).
+		Select("price", "count(price) as price_counts").
+		Where("market_item_id = ?", obj.ID).
+		Where("category = ?", "sell").
+		Group("price").
+		Order("price desc").
+		Limit(5).
+		Rows()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	prices := make([]*models.MarketItemPrice, 0)
+	for rows.Next() {
+		price := new(models.MarketItemPrice)
+
+		if err := rows.Scan(&price.Price, &price.Quantity); err != nil {
+			return nil, err
+		}
+
+		prices = append(prices, price)
+	}
+
+	return prices, nil
 }
 
 func (r *marketItemResolver) StartingPrice(ctx context.Context, obj *models.MarketItem) (float64, error) {
@@ -38,9 +101,46 @@ func (r *marketItemResolver) TransactionsCount(ctx context.Context, obj *models.
 		Model(obj).
 		Joins("join market_item_transactions mit on market_items.id = mit.market_item_id").
 		Where("market_items.id = ?", obj.ID).
-		Group("market_items.id, market_items.game_id, market_items.image_id, market_items.name, market_items.user_id").
+		Group("market_items.id").
 		Count(count).
 		Error
+}
+
+func (r *mutationResolver) AddMarketItemOffer(ctx context.Context, input models.AddMarketItemOffer) (*models.MarketItemOffer, error) {
+	user, err := middlewares.UseAuth(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	item := new(models.MarketItem)
+	if err := facades.UseDB().First(item, input.MarketItemID).Error; err != nil {
+		return nil, err
+	}
+
+	offer := &models.MarketItemOffer{
+		Category:    input.Category,
+		MarketItem_: *item,
+		Price:       input.Price,
+		Quantity:    input.Quantity,
+		User_:       *user,
+	}
+
+	return offer, facades.UseDB().Create(offer).Error
+}
+
+func (r *mutationResolver) CancelMarketItemOffer(ctx context.Context, id int64) (*models.MarketItemOffer, error) {
+	offer := new(models.MarketItemOffer)
+
+	if err := facades.UseDB().First(offer, id).Error; err != nil {
+		return nil, err
+	}
+
+	return offer, facades.UseDB().Delete(offer).Error
+}
+
+func (r *queryResolver) MarketItem(ctx context.Context, id int64) (*models.MarketItem, error) {
+	item := new(models.MarketItem)
+	return item, facades.UseDB().First(item, id).Error
 }
 
 func (r *queryResolver) MarketItems(ctx context.Context, page int64) (*models.MarketItemPagination, error) {
@@ -51,7 +151,7 @@ func (r *queryResolver) MarketItems(ctx context.Context, page int64) (*models.Ma
 	if err := facades.UseDB().
 		Model(new(models.MarketItem)).
 		Joins("full join market_item_transactions mit on market_items.id = mit.market_item_id").
-		Group("market_items.id, market_items.game_id, market_items.image_id, market_items.name, market_items.user_id").
+		Group("market_items.id").
 		Count(count).
 		Scopes(facades.UsePagination(int(page), perPage)).
 		Order("count(mit.id) desc").
@@ -81,7 +181,17 @@ func (r *userResolver) GamesByOwnedMarketItems(ctx context.Context, obj *models.
 	return games, nil
 }
 
-func (r *userResolver) MarketItemsByGame(ctx context.Context, obj *models.User, page int64, gameID int64) (*models.MarketItemPagination, error) {
+func (r *userResolver) MarketItemsBuyListing(ctx context.Context, obj *models.User) ([]*models.MarketItemOffer, error) {
+	offers := make([]*models.MarketItemOffer, 0)
+	return offers, facades.UseDB().
+		Preload("MarketItem_.Game_").
+		Where("user_id = ?", obj.ID).
+		Where("category = ?", "buy").
+		Find(&offers).
+		Error
+}
+
+func (r *userResolver) MarketItemsByGame(ctx context.Context, obj *models.User, page int64, gameID int64, filter string) (*models.MarketItemPagination, error) {
 	items := make([]*models.MarketItem, 0)
 	count := new(int64)
 	perPage := 10
@@ -92,6 +202,7 @@ func (r *userResolver) MarketItemsByGame(ctx context.Context, obj *models.User, 
 		Joins("join market_items mi on inventories.market_item_id = mi.id").
 		Where("game_id = ?", gameID).
 		Where("user_id = ?", obj.ID).
+		Where("(lower(mi.category) like lower(?) or lower(mi.name) like lower(?))", "%"+filter+"%", "%"+filter+"%").
 		Count(count).
 		Scopes(facades.UsePagination(int(page), perPage)).
 		Find(&inventories).
@@ -111,6 +222,16 @@ func (r *userResolver) MarketItemsByGame(ctx context.Context, obj *models.User, 
 		Data:       items,
 		TotalPages: int64(math.Ceil(float64(*count) / float64(perPage))),
 	}, nil
+}
+
+func (r *userResolver) MarketItemsSellListing(ctx context.Context, obj *models.User) ([]*models.MarketItemOffer, error) {
+	offers := make([]*models.MarketItemOffer, 0)
+	return offers, facades.UseDB().
+		Preload("MarketItem_.Game_").
+		Where("user_id = ?", obj.ID).
+		Where("category = ?", "sell").
+		Find(&offers).
+		Error
 }
 
 // MarketItem returns generated.MarketItemResolver implementation.

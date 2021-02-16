@@ -1,11 +1,26 @@
+type MarketItemPrice {
+    price: Float!
+    quantity: Int!
+}
+
 type MarketItem {
     id: ID!
+    buyPrices: [MarketItemPrice!]!
+    category: String!
     description: String!
     game: Game!
     image: AssetFile!
     name: String!
+    salePrices: [MarketItemPrice!]!
     startingPrice: Float!
     transactionsCount: Int!
+}
+
+type MarketItemOffer {
+    id: ID!
+    marketItem: MarketItem!
+    price: Float!
+    quantity: Int!
 }
 
 type MarketItemPagination {
@@ -15,9 +30,24 @@ type MarketItemPagination {
 
 extend type User {
     gamesByOwnedMarketItems: [Game!]!
-    marketItemsByGame(page: Int!, gameId: ID!): MarketItemPagination!
+    marketItemsBuyListing: [MarketItemOffer!]!
+    marketItemsByGame(page: Int!, gameId: ID!, filter: String!): MarketItemPagination!
+    marketItemsSellListing: [MarketItemOffer!]!
 }
 
 extend type Query {
+    marketItem(id: ID!): MarketItem!
     marketItems(page: Int!): MarketItemPagination!
+}
+
+input AddMarketItemOffer {
+    category: String!
+    marketItemId: ID!
+    price: Float!
+    quantity: Int!
+}
+
+extend type Mutation {
+    addMarketItemOffer(input: AddMarketItemOffer!): MarketItemOffer!
+    cancelMarketItemOffer(id: ID!): MarketItemOffer!
 }

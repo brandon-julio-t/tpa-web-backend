@@ -6,6 +6,13 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type AddMarketItemOffer struct {
+	Category     string  `json:"category"`
+	MarketItemID int64   `json:"marketItemId"`
+	Price        float64 `json:"price"`
+	Quantity     int64   `json:"quantity"`
+}
+
 type CommunityDiscussionCommentPagination struct {
 	Data       []*CommunityDiscussionComment `json:"data"`
 	TotalPages int64                         `json:"totalPages"`
@@ -60,6 +67,11 @@ type Gift struct {
 type MarketItemPagination struct {
 	Data       []*MarketItem `json:"data"`
 	TotalPages int64         `json:"totalPages"`
+}
+
+type MarketItemPrice struct {
+	Price    float64 `json:"price"`
+	Quantity int64   `json:"quantity"`
 }
 
 type PostCommunityDiscussion struct {

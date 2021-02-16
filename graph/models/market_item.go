@@ -2,6 +2,7 @@ package models
 
 type MarketItem struct {
 	ID          int64
+	Category    string
 	Description string
 	GameID      int64
 	Game_       Game `gorm:"foreignKey:GameID"`
