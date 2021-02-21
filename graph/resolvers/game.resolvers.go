@@ -53,6 +53,50 @@ func (r *gameResolver) Tags(ctx context.Context, obj *models.Game) ([]*models.Ga
 	return obj.GameTags, nil
 }
 
+func (r *gameResolver) TopFiveCountriesUsersCount(ctx context.Context, obj *models.Game) ([]*models.CountryUsersCount, error) {
+	countries := make([]*models.CountryUsersCount, 0)
+
+	rows, err := facades.UseDB().Raw(`
+select countries.*, sbq1.c + sbq2.c
+from countries
+         join (select countries.*, count(countries.id) as c
+               from countries
+                        join users u on countries.id = u.country_id
+                        join game_purchase_transaction_headers gpth
+                             on u.id = gpth.game_purchase_transaction_header_user_id
+                        join game_purchase_transaction_details gptd
+                             on gpth.id = gptd.game_purchase_transaction_header_id
+               where game_purchase_transaction_detail_game_id = ?
+               group by countries.id) as sbq1 on countries.id = sbq1.id
+         join (select countries.*, count(countries.id) as c
+               from countries
+                        join users u on countries.id = u.country_id
+                        join game_gift_transaction_headers ggth on u.id = ggth.game_gift_transaction_header_friend_id
+                        join game_gift_transaction_details ggtd on ggth.id = ggtd.game_gift_transaction_header_id
+               where game_gift_transaction_detail_game_id = ?
+               group by countries.id) as sbq2 on countries.id = sbq2.id
+`, obj.ID, obj.ID).Rows()
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		c := &models.CountryUsersCount{
+			Country: &models.Country{},
+			Count:   0,
+		}
+		if err := rows.Scan(&c.Country.ID, &c.Country.Name, &c.Country.Longitude, &c.Country.Latitude, &c.Count); err != nil {
+			return nil, err
+		}
+		countries = append(countries, c)
+	}
+
+	return countries, nil
+}
+
 func (r *gameSlideshowResolver) File(ctx context.Context, obj *models.GameSlideshow) (*models.AssetFile, error) {
 	return &obj.GameSlideshowFile, facades.UseDB().First(obj).Error
 }

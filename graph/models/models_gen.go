@@ -23,6 +23,11 @@ type CommunityImageAndVideoCommentPagination struct {
 	TotalPages int64                            `json:"totalPages"`
 }
 
+type CountryUsersCount struct {
+	Country *Country `json:"country"`
+	Count   int64    `json:"count"`
+}
+
 type CreateCommunityImageAndVideo struct {
 	Description string         `json:"description"`
 	File        graphql.Upload `json:"file"`

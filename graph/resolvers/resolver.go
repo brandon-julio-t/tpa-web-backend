@@ -16,6 +16,7 @@ type Resolver struct {
 	RTCConnections     map[string]string
 	RTCJoinSockets     map[string]chan string
 	StreamingRooms     map[string][]chan string
+	MarketItemSockets  map[int64][]chan string
 	Mutex              sync.Mutex
 }
 
@@ -25,5 +26,6 @@ func NewResolver() *Resolver {
 		RTCConnections:     map[string]string{},
 		RTCJoinSockets:     map[string]chan string{},
 		StreamingRooms:     map[string][]chan string{},
+		MarketItemSockets:  map[int64][]chan string{},
 	}
 }

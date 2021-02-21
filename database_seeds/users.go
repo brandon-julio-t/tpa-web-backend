@@ -86,9 +86,14 @@ func SeedUsers() error {
 	}
 
 	for _, user := range users {
+		country := new(models.Country)
+		if err := facades.UseDB().Order("random()").First(country).Error; err != nil {
+			return err
+		}
+
 		facades.UseDB().Clauses(clause.OnConflict{DoNothing: true}).Create(&models.User{
 			AccountName: user.AccountName,
-			CountryID:   69,
+			Country:     *country,
 			Email:       user.Email,
 			Exp:         faker.Number().NumberInt64(faker.Number().NumberInt(1)),
 			Password:    string(userHash),

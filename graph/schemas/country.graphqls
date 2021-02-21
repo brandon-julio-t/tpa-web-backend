@@ -1,6 +1,8 @@
 type Country {
     id: ID!
     name: String!
+    longitude: Float!
+    latitude: Float!
 }
 
 extend type Query {

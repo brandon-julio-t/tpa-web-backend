@@ -122,8 +122,15 @@ type ComplexityRoot struct {
 	}
 
 	Country struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Latitude  func(childComplexity int) int
+		Longitude func(childComplexity int) int
+		Name      func(childComplexity int) int
+	}
+
+	CountryUsersCount struct {
+		Count   func(childComplexity int) int
+		Country func(childComplexity int) int
 	}
 
 	DiscoveryQueue struct {
@@ -138,26 +145,27 @@ type ComplexityRoot struct {
 	}
 
 	Game struct {
-		Banner             func(childComplexity int) int
-		CreatedAt          func(childComplexity int) int
-		Description        func(childComplexity int) int
-		Developer          func(childComplexity int) int
-		Discount           func(childComplexity int) int
-		Discussions        func(childComplexity int) int
-		Genre              func(childComplexity int) int
-		ID                 func(childComplexity int) int
-		IsInCart           func(childComplexity int) int
-		IsInWishlist       func(childComplexity int) int
-		IsInappropriate    func(childComplexity int) int
-		MostHelpfulReviews func(childComplexity int) int
-		Price              func(childComplexity int) int
-		Publisher          func(childComplexity int) int
-		RecentReviews      func(childComplexity int) int
-		Slideshows         func(childComplexity int) int
-		SystemRequirements func(childComplexity int) int
-		Tags               func(childComplexity int) int
-		Title              func(childComplexity int) int
-		TopDiscussions     func(childComplexity int) int
+		Banner                     func(childComplexity int) int
+		CreatedAt                  func(childComplexity int) int
+		Description                func(childComplexity int) int
+		Developer                  func(childComplexity int) int
+		Discount                   func(childComplexity int) int
+		Discussions                func(childComplexity int) int
+		Genre                      func(childComplexity int) int
+		ID                         func(childComplexity int) int
+		IsInCart                   func(childComplexity int) int
+		IsInWishlist               func(childComplexity int) int
+		IsInappropriate            func(childComplexity int) int
+		MostHelpfulReviews         func(childComplexity int) int
+		Price                      func(childComplexity int) int
+		Publisher                  func(childComplexity int) int
+		RecentReviews              func(childComplexity int) int
+		Slideshows                 func(childComplexity int) int
+		SystemRequirements         func(childComplexity int) int
+		Tags                       func(childComplexity int) int
+		Title                      func(childComplexity int) int
+		TopDiscussions             func(childComplexity int) int
+		TopFiveCountriesUsersCount func(childComplexity int) int
 	}
 
 	GameGenre struct {
@@ -214,6 +222,7 @@ type ComplexityRoot struct {
 		ID                func(childComplexity int) int
 		Image             func(childComplexity int) int
 		Name              func(childComplexity int) int
+		PastMonthSales    func(childComplexity int) int
 		SalePrices        func(childComplexity int) int
 		StartingPrice     func(childComplexity int) int
 		TransactionsCount func(childComplexity int) int
@@ -234,6 +243,11 @@ type ComplexityRoot struct {
 	MarketItemPrice struct {
 		Price    func(childComplexity int) int
 		Quantity func(childComplexity int) int
+	}
+
+	MarketItemTransaction struct {
+		CreatedAt func(childComplexity int) int
+		Price     func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -386,9 +400,10 @@ type ComplexityRoot struct {
 	}
 
 	Subscription struct {
-		OnNewIceCandidate   func(childComplexity int, accountName string) int
-		OnStreamJoin        func(childComplexity int) int
-		PrivateMessageAdded func(childComplexity int) int
+		OnMarketItemOfferAdded func(childComplexity int, marketItemID int64) int
+		OnNewIceCandidate      func(childComplexity int, accountName string) int
+		OnStreamJoin           func(childComplexity int) int
+		PrivateMessageAdded    func(childComplexity int) int
 	}
 
 	User struct {
@@ -480,6 +495,7 @@ type GameResolver interface {
 
 	Tags(ctx context.Context, obj *models.Game) ([]*models.GameTag, error)
 
+	TopFiveCountriesUsersCount(ctx context.Context, obj *models.Game) ([]*models.CountryUsersCount, error)
 	TopDiscussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
 	Discussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
 	MostHelpfulReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
@@ -503,6 +519,7 @@ type MarketItemResolver interface {
 
 	Image(ctx context.Context, obj *models.MarketItem) (*models.AssetFile, error)
 
+	PastMonthSales(ctx context.Context, obj *models.MarketItem) ([]*models.MarketItemTransaction, error)
 	SalePrices(ctx context.Context, obj *models.MarketItem) ([]*models.MarketItemPrice, error)
 	StartingPrice(ctx context.Context, obj *models.MarketItem) (float64, error)
 	TransactionsCount(ctx context.Context, obj *models.MarketItem) (int64, error)
@@ -608,6 +625,7 @@ type QueryResolver interface {
 }
 type SubscriptionResolver interface {
 	PrivateMessageAdded(ctx context.Context) (<-chan *models.PrivateMessage, error)
+	OnMarketItemOfferAdded(ctx context.Context, marketItemID int64) (<-chan string, error)
 	OnStreamJoin(ctx context.Context) (<-chan string, error)
 	OnNewIceCandidate(ctx context.Context, accountName string) (<-chan string, error)
 }
@@ -972,12 +990,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Country.ID(childComplexity), true
 
+	case "Country.latitude":
+		if e.complexity.Country.Latitude == nil {
+			break
+		}
+
+		return e.complexity.Country.Latitude(childComplexity), true
+
+	case "Country.longitude":
+		if e.complexity.Country.Longitude == nil {
+			break
+		}
+
+		return e.complexity.Country.Longitude(childComplexity), true
+
 	case "Country.name":
 		if e.complexity.Country.Name == nil {
 			break
 		}
 
 		return e.complexity.Country.Name(childComplexity), true
+
+	case "CountryUsersCount.count":
+		if e.complexity.CountryUsersCount.Count == nil {
+			break
+		}
+
+		return e.complexity.CountryUsersCount.Count(childComplexity), true
+
+	case "CountryUsersCount.country":
+		if e.complexity.CountryUsersCount.Country == nil {
+			break
+		}
+
+		return e.complexity.CountryUsersCount.Country(childComplexity), true
 
 	case "DiscoveryQueue.newReleases":
 		if e.complexity.DiscoveryQueue.NewReleases == nil {
@@ -1153,6 +1199,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Game.TopDiscussions(childComplexity), true
+
+	case "Game.topFiveCountriesUsersCount":
+		if e.complexity.Game.TopFiveCountriesUsersCount == nil {
+			break
+		}
+
+		return e.complexity.Game.TopFiveCountriesUsersCount(childComplexity), true
 
 	case "GameGenre.id":
 		if e.complexity.GameGenre.ID == nil {
@@ -1383,6 +1436,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MarketItem.Name(childComplexity), true
 
+	case "MarketItem.pastMonthSales":
+		if e.complexity.MarketItem.PastMonthSales == nil {
+			break
+		}
+
+		return e.complexity.MarketItem.PastMonthSales(childComplexity), true
+
 	case "MarketItem.salePrices":
 		if e.complexity.MarketItem.SalePrices == nil {
 			break
@@ -1459,6 +1519,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.MarketItemPrice.Quantity(childComplexity), true
+
+	case "MarketItemTransaction.createdAt":
+		if e.complexity.MarketItemTransaction.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.MarketItemTransaction.CreatedAt(childComplexity), true
+
+	case "MarketItemTransaction.price":
+		if e.complexity.MarketItemTransaction.Price == nil {
+			break
+		}
+
+		return e.complexity.MarketItemTransaction.Price(childComplexity), true
 
 	case "Mutation.acceptFriendRequest":
 		if e.complexity.Mutation.AcceptFriendRequest == nil {
@@ -2654,6 +2728,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Report.Reporter(childComplexity), true
 
+	case "Subscription.onMarketItemOfferAdded":
+		if e.complexity.Subscription.OnMarketItemOfferAdded == nil {
+			break
+		}
+
+		args, err := ec.field_Subscription_onMarketItemOfferAdded_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Subscription.OnMarketItemOfferAdded(childComplexity, args["marketItemId"].(int64)), true
+
 	case "Subscription.onNewIceCandidate":
 		if e.complexity.Subscription.OnNewIceCandidate == nil {
 			break
@@ -3238,6 +3324,8 @@ extend type Mutation {
 	{Name: "graph/schemas/country.graphqls", Input: `type Country {
     id: ID!
     name: String!
+    longitude: Float!
+    latitude: Float!
 }
 
 extend type Query {
@@ -3276,7 +3364,12 @@ extend type Mutation {
     ignoreFriendRequest(userId: ID!): User!
 }
 `, BuiltIn: false},
-	{Name: "graph/schemas/game.graphqls", Input: `type Game {
+	{Name: "graph/schemas/game.graphqls", Input: `type CountryUsersCount {
+    country: Country!
+    count: Int!
+}
+
+type Game {
     id: ID!
     banner: AssetFile!
     createdAt: Time!
@@ -3293,6 +3386,7 @@ extend type Mutation {
     systemRequirements: String!
     tags: [GameTag!]!
     title: String!
+    topFiveCountriesUsersCount: [CountryUsersCount!]!
 }
 
 type GameSlideshow {
@@ -3398,6 +3492,11 @@ extend type Query {
     quantity: Int!
 }
 
+type MarketItemTransaction {
+    createdAt: Time!
+    price: Float!
+}
+
 type MarketItem {
     id: ID!
     buyPrices: [MarketItemPrice!]!
@@ -3406,6 +3505,7 @@ type MarketItem {
     game: Game!
     image: AssetFile!
     name: String!
+    pastMonthSales: [MarketItemTransaction!]!
     salePrices: [MarketItemPrice!]!
     startingPrice: Float!
     transactionsCount: Int!
@@ -3445,6 +3545,10 @@ input AddMarketItemOffer {
 extend type Mutation {
     addMarketItemOffer(input: AddMarketItemOffer!): MarketItemOffer!
     cancelMarketItemOffer(id: ID!): MarketItemOffer!
+}
+
+extend type Subscription {
+    onMarketItemOfferAdded(marketItemId: ID!): String!
 }
 `, BuiltIn: false},
 	{Name: "graph/schemas/notification.graphqls", Input: `type Notification {
@@ -4989,6 +5093,21 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["page"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Subscription_onMarketItemOfferAdded_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["marketItemId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("marketItemId"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["marketItemId"] = arg0
 	return args, nil
 }
 
@@ -6583,6 +6702,146 @@ func (ec *executionContext) _Country_name(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Country_longitude(ctx context.Context, field graphql.CollectedField, obj *models.Country) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Country",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Longitude, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Country_latitude(ctx context.Context, field graphql.CollectedField, obj *models.Country) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Country",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Latitude, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryUsersCount_country(ctx context.Context, field graphql.CollectedField, obj *models.CountryUsersCount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryUsersCount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Country, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Country)
+	fc.Result = res
+	return ec.marshalNCountry2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountry(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryUsersCount_count(ctx context.Context, field graphql.CollectedField, obj *models.CountryUsersCount) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryUsersCount",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Count, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _DiscoveryQueue_newReleases(ctx context.Context, field graphql.CollectedField, obj *models.DiscoveryQueue) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7316,6 +7575,41 @@ func (ec *executionContext) _Game_title(ctx context.Context, field graphql.Colle
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Game_topFiveCountriesUsersCount(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().TopFiveCountriesUsersCount(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.CountryUsersCount)
+	fc.Result = res
+	return ec.marshalNCountryUsersCount2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryUsersCountᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Game_topDiscussions(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
@@ -8585,6 +8879,41 @@ func (ec *executionContext) _MarketItem_name(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _MarketItem_pastMonthSales(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItem",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MarketItem().PastMonthSales(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.MarketItemTransaction)
+	fc.Result = res
+	return ec.marshalNMarketItemTransaction2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemTransactionᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _MarketItem_salePrices(ctx context.Context, field graphql.CollectedField, obj *models.MarketItem) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8968,6 +9297,76 @@ func (ec *executionContext) _MarketItemPrice_quantity(ctx context.Context, field
 	res := resTmp.(int64)
 	fc.Result = res
 	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItemTransaction_createdAt(ctx context.Context, field graphql.CollectedField, obj *models.MarketItemTransaction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItemTransaction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarketItemTransaction_price(ctx context.Context, field graphql.CollectedField, obj *models.MarketItemTransaction) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarketItemTransaction",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Price, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -13826,6 +14225,58 @@ func (ec *executionContext) _Subscription_privateMessageAdded(ctx context.Contex
 	}
 }
 
+func (ec *executionContext) _Subscription_onMarketItemOfferAdded(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = nil
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Subscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Subscription_onMarketItemOfferAdded_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Subscription().OnMarketItemOfferAdded(rctx, args["marketItemId"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return nil
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return nil
+	}
+	return func() graphql.Marshaler {
+		res, ok := <-resTmp.(<-chan string)
+		if !ok {
+			return nil
+		}
+		return graphql.WriterFunc(func(w io.Writer) {
+			w.Write([]byte{'{'})
+			graphql.MarshalString(field.Alias).MarshalGQL(w)
+			w.Write([]byte{':'})
+			ec.marshalNString2string(ctx, field.Selections, res).MarshalGQL(w)
+			w.Write([]byte{'}'})
+		})
+	}
+}
+
 func (ec *executionContext) _Subscription_onStreamJoin(ctx context.Context, field graphql.CollectedField) (ret func() graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -17535,6 +17986,48 @@ func (ec *executionContext) _Country(ctx context.Context, sel ast.SelectionSet, 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "longitude":
+			out.Values[i] = ec._Country_longitude(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "latitude":
+			out.Values[i] = ec._Country_latitude(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var countryUsersCountImplementors = []string{"CountryUsersCount"}
+
+func (ec *executionContext) _CountryUsersCount(ctx context.Context, sel ast.SelectionSet, obj *models.CountryUsersCount) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryUsersCountImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryUsersCount")
+		case "country":
+			out.Values[i] = ec._CountryUsersCount_country(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "count":
+			out.Values[i] = ec._CountryUsersCount_count(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -17769,6 +18262,20 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "topFiveCountriesUsersCount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_topFiveCountriesUsersCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "topDiscussions":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18251,6 +18758,20 @@ func (ec *executionContext) _MarketItem(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "pastMonthSales":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MarketItem_pastMonthSales(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "salePrices":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -18396,6 +18917,38 @@ func (ec *executionContext) _MarketItemPrice(ctx context.Context, sel ast.Select
 			}
 		case "quantity":
 			out.Values[i] = ec._MarketItemPrice_quantity(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var marketItemTransactionImplementors = []string{"MarketItemTransaction"}
+
+func (ec *executionContext) _MarketItemTransaction(ctx context.Context, sel ast.SelectionSet, obj *models.MarketItemTransaction) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, marketItemTransactionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarketItemTransaction")
+		case "createdAt":
+			out.Values[i] = ec._MarketItemTransaction_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "price":
+			out.Values[i] = ec._MarketItemTransaction_price(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -19590,6 +20143,8 @@ func (ec *executionContext) _Subscription(ctx context.Context, sel ast.Selection
 	switch fields[0].Name {
 	case "privateMessageAdded":
 		return ec._Subscription_privateMessageAdded(ctx, fields[0])
+	case "onMarketItemOfferAdded":
+		return ec._Subscription_onMarketItemOfferAdded(ctx, fields[0])
 	case "onStreamJoin":
 		return ec._Subscription_onStreamJoin(ctx, fields[0])
 	case "onNewIceCandidate":
@@ -20679,6 +21234,53 @@ func (ec *executionContext) marshalNCountry2ᚖgithubᚗcomᚋbrandonᚑjulioᚑ
 	return ec._Country(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNCountryUsersCount2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryUsersCountᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.CountryUsersCount) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCountryUsersCount2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryUsersCount(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCountryUsersCount2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryUsersCount(ctx context.Context, sel ast.SelectionSet, v *models.CountryUsersCount) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CountryUsersCount(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateCommunityImageAndVideo2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCreateCommunityImageAndVideo(ctx context.Context, v interface{}) (models.CreateCommunityImageAndVideo, error) {
 	res, err := ec.unmarshalInputCreateCommunityImageAndVideo(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -21290,6 +21892,53 @@ func (ec *executionContext) marshalNMarketItemPrice2ᚖgithubᚗcomᚋbrandonᚑ
 		return graphql.Null
 	}
 	return ec._MarketItemPrice(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMarketItemTransaction2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemTransactionᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.MarketItemTransaction) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMarketItemTransaction2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemTransaction(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNMarketItemTransaction2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐMarketItemTransaction(ctx context.Context, sel ast.SelectionSet, v *models.MarketItemTransaction) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MarketItemTransaction(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNNotification2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐNotification(ctx context.Context, sel ast.SelectionSet, v models.Notification) graphql.Marshaler {

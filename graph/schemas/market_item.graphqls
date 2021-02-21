@@ -3,6 +3,11 @@ type MarketItemPrice {
     quantity: Int!
 }
 
+type MarketItemTransaction {
+    createdAt: Time!
+    price: Float!
+}
+
 type MarketItem {
     id: ID!
     buyPrices: [MarketItemPrice!]!
@@ -11,6 +16,7 @@ type MarketItem {
     game: Game!
     image: AssetFile!
     name: String!
+    pastMonthSales: [MarketItemTransaction!]!
     salePrices: [MarketItemPrice!]!
     startingPrice: Float!
     transactionsCount: Int!
@@ -50,4 +56,8 @@ input AddMarketItemOffer {
 extend type Mutation {
     addMarketItemOffer(input: AddMarketItemOffer!): MarketItemOffer!
     cancelMarketItemOffer(id: ID!): MarketItemOffer!
+}
+
+extend type Subscription {
+    onMarketItemOfferAdded(marketItemId: ID!): String!
 }

@@ -13,7 +13,7 @@ import (
 
 func SeedGameGiftTransactions() error {
 	return facades.UseDB().Transaction(func(tx *gorm.DB) error {
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 29; i++ {
 			userIds, err := strconv.ParseInt(faker.Number().Between(2, 10), 10, 64)
 			if err != nil {
 				return err
