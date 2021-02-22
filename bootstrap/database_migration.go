@@ -61,6 +61,11 @@ func init() {
 
 		new(models.PointItem),
 		new(models.PointItemPurchase),
+
+		new(models.Badge),
+		new(models.BadgeTransaction),
+		new(models.BadgeCard),
+		new(models.BadgeCardTransaction),
 	}
 
 	if err := facades.UseDB().Migrator().DropTable(entities...); err != nil {

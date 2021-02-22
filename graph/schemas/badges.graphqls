@@ -1,0 +1,22 @@
+directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
+type Badge {
+    id: ID!
+    exp: Int!
+    game: Game! @goField(forceResolver: true)
+    isOwned: Boolean!
+    level: Int!
+    name: String!
+}
+
+type BadgeCard {
+    id: ID!
+    badge: Badge! @goField(forceResolver: true)
+    isOwned: Boolean!
+    name: String!
+}
+
+extend type Game {
+    badges: [Badge!]!
+}

@@ -38,6 +38,8 @@ func init() {
 				database_seeds.SeedMarketItemOffers,
 				database_seeds.SeedMarketItemTransactions,
 				database_seeds.SeedInventory,
+
+				database_seeds.SeedBadges,
 			} {
 				if err := seed(); err != nil {
 					return err

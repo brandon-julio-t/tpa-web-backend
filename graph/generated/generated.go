@@ -37,6 +37,8 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Badge() BadgeResolver
+	BadgeCard() BadgeCardResolver
 	Community() CommunityResolver
 	CommunityDiscussion() CommunityDiscussionResolver
 	CommunityImageAndVideo() CommunityImageAndVideoResolver
@@ -60,6 +62,22 @@ type ComplexityRoot struct {
 	AssetFile struct {
 		ContentType func(childComplexity int) int
 		ID          func(childComplexity int) int
+	}
+
+	Badge struct {
+		Exp     func(childComplexity int) int
+		Game    func(childComplexity int) int
+		ID      func(childComplexity int) int
+		IsOwned func(childComplexity int) int
+		Level   func(childComplexity int) int
+		Name    func(childComplexity int) int
+	}
+
+	BadgeCard struct {
+		Badge   func(childComplexity int) int
+		ID      func(childComplexity int) int
+		IsOwned func(childComplexity int) int
+		Name    func(childComplexity int) int
 	}
 
 	Community struct {
@@ -145,6 +163,7 @@ type ComplexityRoot struct {
 	}
 
 	Game struct {
+		Badges                     func(childComplexity int) int
 		Banner                     func(childComplexity int) int
 		CreatedAt                  func(childComplexity int) int
 		Description                func(childComplexity int) int
@@ -457,6 +476,14 @@ type ComplexityRoot struct {
 	}
 }
 
+type BadgeResolver interface {
+	Game(ctx context.Context, obj *models.Badge) (*models.Game, error)
+	IsOwned(ctx context.Context, obj *models.Badge) (bool, error)
+}
+type BadgeCardResolver interface {
+	Badge(ctx context.Context, obj *models.BadgeCard) (*models.Badge, error)
+	IsOwned(ctx context.Context, obj *models.BadgeCard) (bool, error)
+}
 type CommunityResolver interface {
 	ImageAndVideo(ctx context.Context, obj *models.Community, id int64) (*models.CommunityImageAndVideo, error)
 	ImagesAndVideos(ctx context.Context, obj *models.Community) ([]*models.CommunityImageAndVideo, error)
@@ -496,6 +523,7 @@ type GameResolver interface {
 	Tags(ctx context.Context, obj *models.Game) ([]*models.GameTag, error)
 
 	TopFiveCountriesUsersCount(ctx context.Context, obj *models.Game) ([]*models.CountryUsersCount, error)
+	Badges(ctx context.Context, obj *models.Game) ([]*models.Badge, error)
 	TopDiscussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
 	Discussions(ctx context.Context, obj *models.Game) ([]*models.CommunityDiscussion, error)
 	MostHelpfulReviews(ctx context.Context, obj *models.Game) ([]*models.GameReview, error)
@@ -691,6 +719,76 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AssetFile.ID(childComplexity), true
+
+	case "Badge.exp":
+		if e.complexity.Badge.Exp == nil {
+			break
+		}
+
+		return e.complexity.Badge.Exp(childComplexity), true
+
+	case "Badge.game":
+		if e.complexity.Badge.Game == nil {
+			break
+		}
+
+		return e.complexity.Badge.Game(childComplexity), true
+
+	case "Badge.id":
+		if e.complexity.Badge.ID == nil {
+			break
+		}
+
+		return e.complexity.Badge.ID(childComplexity), true
+
+	case "Badge.isOwned":
+		if e.complexity.Badge.IsOwned == nil {
+			break
+		}
+
+		return e.complexity.Badge.IsOwned(childComplexity), true
+
+	case "Badge.level":
+		if e.complexity.Badge.Level == nil {
+			break
+		}
+
+		return e.complexity.Badge.Level(childComplexity), true
+
+	case "Badge.name":
+		if e.complexity.Badge.Name == nil {
+			break
+		}
+
+		return e.complexity.Badge.Name(childComplexity), true
+
+	case "BadgeCard.badge":
+		if e.complexity.BadgeCard.Badge == nil {
+			break
+		}
+
+		return e.complexity.BadgeCard.Badge(childComplexity), true
+
+	case "BadgeCard.id":
+		if e.complexity.BadgeCard.ID == nil {
+			break
+		}
+
+		return e.complexity.BadgeCard.ID(childComplexity), true
+
+	case "BadgeCard.isOwned":
+		if e.complexity.BadgeCard.IsOwned == nil {
+			break
+		}
+
+		return e.complexity.BadgeCard.IsOwned(childComplexity), true
+
+	case "BadgeCard.name":
+		if e.complexity.BadgeCard.Name == nil {
+			break
+		}
+
+		return e.complexity.BadgeCard.Name(childComplexity), true
 
 	case "Community.discussion":
 		if e.complexity.Community.Discussion == nil {
@@ -1059,6 +1157,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.FriendRequest.User(childComplexity), true
+
+	case "Game.badges":
+		if e.complexity.Game.Badges == nil {
+			break
+		}
+
+		return e.complexity.Game.Badges(childComplexity), true
 
 	case "Game.banner":
 		if e.complexity.Game.Banner == nil {
@@ -3175,6 +3280,29 @@ type Mutation {
     logout: User!
 }
 `, BuiltIn: false},
+	{Name: "graph/schemas/badges.graphqls", Input: `directive @goField(forceResolver: Boolean, name: String) on INPUT_FIELD_DEFINITION
+    | FIELD_DEFINITION
+
+type Badge {
+    id: ID!
+    exp: Int!
+    game: Game! @goField(forceResolver: true)
+    isOwned: Boolean!
+    level: Int!
+    name: String!
+}
+
+type BadgeCard {
+    id: ID!
+    badge: Badge! @goField(forceResolver: true)
+    isOwned: Boolean!
+    name: String!
+}
+
+extend type Game {
+    badges: [Badge!]!
+}
+`, BuiltIn: false},
 	{Name: "graph/schemas/cart.graphqls", Input: `extend type Mutation {
     addToCart(gameId: ID!): Game!
     removeFromCart(gameId: ID!): Game!
@@ -5251,6 +5379,356 @@ func (ec *executionContext) _AssetFile_contentType(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.ContentType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_id(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_exp(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Exp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_game(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Badge().Game(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Game)
+	fc.Result = res
+	return ec.marshalNGame2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐGame(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_isOwned(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Badge().IsOwned(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_level(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Level, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Badge_name(ctx context.Context, field graphql.CollectedField, obj *models.Badge) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Badge",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BadgeCard_id(ctx context.Context, field graphql.CollectedField, obj *models.BadgeCard) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BadgeCard",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BadgeCard_badge(ctx context.Context, field graphql.CollectedField, obj *models.BadgeCard) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BadgeCard",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.BadgeCard().Badge(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*models.Badge)
+	fc.Result = res
+	return ec.marshalNBadge2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadge(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BadgeCard_isOwned(ctx context.Context, field graphql.CollectedField, obj *models.BadgeCard) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BadgeCard",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.BadgeCard().IsOwned(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _BadgeCard_name(ctx context.Context, field graphql.CollectedField, obj *models.BadgeCard) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "BadgeCard",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7610,6 +8088,41 @@ func (ec *executionContext) _Game_topFiveCountriesUsersCount(ctx context.Context
 	res := resTmp.([]*models.CountryUsersCount)
 	fc.Result = res
 	return ec.marshalNCountryUsersCount2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐCountryUsersCountᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Game_badges(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().Badges(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*models.Badge)
+	fc.Result = res
+	return ec.marshalNBadge2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadgeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Game_topDiscussions(ctx context.Context, field graphql.CollectedField, obj *models.Game) (ret graphql.Marshaler) {
@@ -17504,6 +18017,136 @@ func (ec *executionContext) _AssetFile(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var badgeImplementors = []string{"Badge"}
+
+func (ec *executionContext) _Badge(ctx context.Context, sel ast.SelectionSet, obj *models.Badge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, badgeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Badge")
+		case "id":
+			out.Values[i] = ec._Badge_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "exp":
+			out.Values[i] = ec._Badge_exp(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "game":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Badge_game(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "isOwned":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Badge_isOwned(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "level":
+			out.Values[i] = ec._Badge_level(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Badge_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var badgeCardImplementors = []string{"BadgeCard"}
+
+func (ec *executionContext) _BadgeCard(ctx context.Context, sel ast.SelectionSet, obj *models.BadgeCard) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, badgeCardImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("BadgeCard")
+		case "id":
+			out.Values[i] = ec._BadgeCard_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "badge":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BadgeCard_badge(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "isOwned":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._BadgeCard_isOwned(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._BadgeCard_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var communityImplementors = []string{"Community"}
 
 func (ec *executionContext) _Community(ctx context.Context, sel ast.SelectionSet, obj *models.Community) graphql.Marshaler {
@@ -18271,6 +18914,20 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._Game_topFiveCountriesUsersCount(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "badges":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_badges(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -20920,6 +21577,57 @@ func (ec *executionContext) marshalNAssetFile2ᚖgithubᚗcomᚋbrandonᚑjulio�
 		return graphql.Null
 	}
 	return ec._AssetFile(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNBadge2githubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadge(ctx context.Context, sel ast.SelectionSet, v models.Badge) graphql.Marshaler {
+	return ec._Badge(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNBadge2ᚕᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*models.Badge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNBadge2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNBadge2ᚖgithubᚗcomᚋbrandonᚑjulioᚑtᚋtpaᚑwebᚑbackendᚋgraphᚋmodelsᚐBadge(ctx context.Context, sel ast.SelectionSet, v *models.Badge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Badge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
